@@ -13,7 +13,7 @@ import { useCaptura3d } from '../lib/captura3d.js'
 import { cargarLogo } from '../lib/marca.js'
 import { aNumero } from '../lib/consumo.js'
 import { DEFECTOS_FINANZAS, proyectar } from '../lib/finanzas.js'
-import { esAjena, guardarPropuesta, registroDe, useHistorial } from '../lib/historial.js'
+import { esAjena, guardarPropuesta, registroDe, subirPdfPropuesta, useHistorial } from '../lib/historial.js'
 import { reservarIdPropuesta } from '../lib/numeracion.js'
 import { useSesion } from '../lib/sesion.js'
 
@@ -58,6 +58,7 @@ export default function PropuestaSection() {
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
   const [guardado, setGuardado] = useState(null) // { ok, texto } del último guardado
+  const [pdfNube, setPdfNube] = useState(null) // { ok, url, carpeta } | { ok: false, texto }
   const captura = useCaptura3d()
   const { perfil } = useSesion()
   const { elegirMarca } = getRol(perfil.rol)
@@ -188,8 +189,17 @@ export default function PropuestaSection() {
       const { doc, sinImagen } = await generarDocumento()
       doc.save(archivo)
       setDescarga({ estado: 'lista', sinImagen })
-      // Una propuesta descargada queda registrada en el historial sin tener que acordarse de guardarla.
+      // Una propuesta descargada queda registrada en el historial sin tener que acordarse de guardarla,
+      // y su PDF se guarda en la carpeta de Drive de la hoja compartida.
       await guardar()
+      if (!soloLectura) {
+        try {
+          const subida = await subirPdfPropuesta(propuesta.id, archivo, doc.output('datauristring').split(',')[1])
+          if (subida) setPdfNube({ ok: true, ...subida })
+        } catch (error) {
+          setPdfNube({ ok: false, texto: /desconocida/i.test(error.message) ? 'El script de la hoja es anterior a esta función: actualízalo (ver Historial).' : error.message })
+        }
+      }
     } catch (error) {
       setDescarga({ estado: 'error', mensaje: error.message })
     }
@@ -275,6 +285,23 @@ export default function PropuestaSection() {
             {guardado.texto}
           </p>
         )}
+        {pdfNube &&
+          (pdfNube.ok ? (
+            <p role="status" className="mt-3 rounded border border-ok/40 bg-ok/10 px-3 py-2 text-xs text-ok">
+              PDF guardado en Drive:{' '}
+              <a href={pdfNube.url} target="_blank" rel="noreferrer" className="underline">
+                abrir el PDF
+              </a>{' '}
+              ·{' '}
+              <a href={pdfNube.carpeta} target="_blank" rel="noreferrer" className="underline">
+                abrir la carpeta
+              </a>
+            </p>
+          ) : (
+            <p role="status" className="mt-3 rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+              El PDF se descargó, pero no se pudo guardar en Drive: {pdfNube.texto}
+            </p>
+          ))}
         {descarga.estado === 'error' && (
           <p role="alert" className="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
             No se pudo generar el PDF: {descarga.mensaje}

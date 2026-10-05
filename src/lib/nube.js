@@ -67,6 +67,8 @@ export const nube = {
   listar: async () => (await leer('propuestas')).propuestas,
   guardar: (propuesta) => escribir({ accion: 'guardar', propuesta }),
   eliminar: (id) => escribir({ accion: 'eliminar', id }),
+  // Sube el PDF (base64) a la carpeta de Drive. Devuelve { url, carpeta }.
+  subirPdf: (id, nombre, contenido) => escribir({ accion: 'pdf', id, nombre, contenido }),
   leerCatalogo: async () => (await leer('catalogo')).catalogo,
   escribirCatalogo: (catalogo, columnas) => escribir({ accion: 'catalogo', catalogo, columnas }),
 }

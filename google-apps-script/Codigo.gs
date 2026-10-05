@@ -5,6 +5,7 @@
  *   - Pestaña "Propuestas": una fila por propuesta guardada (con todos sus datos para reabrirla).
  *   - Pestañas "Paneles", "Inversores", "Baterias" y "RSD": el catálogo de equipos.
  *   - Numeración correlativa PROP-AAAA-NNNN, compartida entre todos los dispositivos.
+ *   - Carpeta "Propuestas PDF" (junto a la hoja, en Drive): el PDF de cada propuesta descargada.
  *
  * Instalación (una sola vez):
  *   1. Crea una hoja de cálculo nueva en Google Sheets.
@@ -20,8 +21,10 @@
 
 const HOJA_PROPUESTAS = 'Propuestas'
 const HOJAS_CATALOGO = { paneles: 'Paneles', inversores: 'Inversores', baterias: 'Baterias', rsd: 'RSD' }
-// La última columna guarda el proyecto completo en JSON: es lo que permite reabrir la propuesta.
-const COLUMNAS = ['id', 'fecha', 'usuario', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios', 'datos']
+const CARPETA_PDF = 'Propuestas PDF'
+// "datos" guarda el proyecto completo en JSON (es lo que permite reabrir la propuesta) y "pdf", el
+// enlace al PDF en Drive. Las columnas nuevas se añaden siempre al final.
+const COLUMNAS = ['id', 'fecha', 'usuario', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios', 'datos', 'pdf']
 
 function doGet(e) {
   return responder(function () {
@@ -53,6 +56,8 @@ function doPost(e) {
       case 'catalogo':
         escribirCatalogo(cuerpo.catalogo, cuerpo.columnas)
         return { ok: true }
+      case 'pdf':
+        return guardarPdf(cuerpo.id, cuerpo.nombre, cuerpo.contenido)
       default:
         throw new Error('Acción desconocida: ' + cuerpo.accion)
     }
@@ -80,6 +85,10 @@ function hoja(nombre, encabezados) {
       pestana.getRange(1, 1, 1, encabezados.length).setValues([encabezados]).setFontWeight('bold')
       pestana.setFrozenRows(1)
     }
+  } else if (encabezados) {
+    // Si una versión nueva del script trae más columnas, se completan los encabezados.
+    const actuales = pestana.getRange(1, 1, 1, encabezados.length).getValues()[0]
+    if (actuales.join('|') !== encabezados.join('|')) pestana.getRange(1, 1, 1, encabezados.length).setValues([encabezados]).setFontWeight('bold')
   }
   return pestana
 }
@@ -139,17 +148,44 @@ function guardarPropuesta(propuesta) {
   candado.waitLock(15000)
   try {
     const pestana = hoja(HOJA_PROPUESTAS, COLUMNAS)
-    const fila = COLUMNAS.map(function (columna) {
-      if (columna === 'datos') return JSON.stringify(propuesta.datos || {})
-      return propuesta[columna] === undefined || propuesta[columna] === null ? '' : propuesta[columna]
-    })
     const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
     const posicion = ids.indexOf(String(propuesta.id))
+    const previa = posicion > 0 ? pestana.getRange(posicion + 1, 1, 1, COLUMNAS.length).getValues()[0] : []
+    const fila = COLUMNAS.map(function (columna, i) {
+      if (columna === 'datos') return JSON.stringify(propuesta.datos || {})
+      // Volver a guardar la propuesta no borra el enlace a su PDF.
+      if (columna === 'pdf' && !propuesta.pdf) return previa[i] || ''
+      return propuesta[columna] === undefined || propuesta[columna] === null ? '' : propuesta[columna]
+    })
     if (posicion > 0) pestana.getRange(posicion + 1, 1, 1, fila.length).setValues([fila])
     else pestana.appendRow(fila)
   } finally {
     candado.releaseLock()
   }
+}
+
+// Carpeta de los PDF: se crea junto a la hoja de cálculo la primera vez.
+function carpetaPdf() {
+  const archivo = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId())
+  const padres = archivo.getParents()
+  const padre = padres.hasNext() ? padres.next() : DriveApp.getRootFolder()
+  const existentes = padre.getFoldersByName(CARPETA_PDF)
+  return existentes.hasNext() ? existentes.next() : padre.createFolder(CARPETA_PDF)
+}
+
+// Guarda el PDF de una propuesta (contenido en base64). Si ya había uno con ese nombre, lo reemplaza.
+// Anota el enlace en la fila de la propuesta y lo devuelve junto con el de la carpeta.
+function guardarPdf(id, nombre, contenido) {
+  if (!id || !nombre || !contenido) throw new Error('Faltan datos del PDF.')
+  const carpeta = carpetaPdf()
+  const anteriores = carpeta.getFilesByName(nombre)
+  while (anteriores.hasNext()) anteriores.next().setTrashed(true)
+  const archivo = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(contenido), 'application/pdf', nombre))
+  const pestana = hoja(HOJA_PROPUESTAS, COLUMNAS)
+  const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
+  const posicion = ids.indexOf(String(id))
+  if (posicion > 0) pestana.getRange(posicion + 1, COLUMNAS.indexOf('pdf') + 1).setValue(archivo.getUrl())
+  return { url: archivo.getUrl(), carpeta: carpeta.getUrl() }
 }
 
 function eliminarPropuesta(id) {

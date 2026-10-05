@@ -111,7 +111,8 @@ export function registroDe({ proyecto, sistema, proyeccion, marca, autor }) {
 // Devuelve { enBase, enNube, error }: `error` describe lo que falló fuera del navegador.
 export async function guardarPropuesta(registro) {
   if (esAjena(buscarPropuesta(registro.id))) return { enBase: false, enNube: false, error: 'Esta propuesta es de otro usuario: cópiala como nueva para modificarla.', ajena: true }
-  const propia = { ...registro, usuario: leerSesion().perfil?.usuario ?? '' }
+  const pdf = buscarPropuesta(registro.id)?.pdf
+  const propia = { ...registro, usuario: leerSesion().perfil?.usuario ?? '', ...(pdf && { pdf }) }
   const errores = []
   let enBase = false
   let enNube = false
@@ -133,6 +134,15 @@ export async function guardarPropuesta(registro) {
     }
   }
   return { enBase, enNube, error: errores.join(' ') || undefined }
+}
+
+// Sube el PDF de una propuesta a la carpeta de Drive de la hoja y anota su enlace en el historial.
+// Devuelve { url, carpeta }, o null si no hay hoja conectada.
+export async function subirPdfPropuesta(id, nombre, base64) {
+  if (!nubeActiva()) return null
+  const resultado = await nube.subirPdf(id, nombre, base64)
+  fijar(lista.map((propuesta) => (propuesta.id === id ? { ...propuesta, pdf: resultado.url } : propuesta)))
+  return resultado
 }
 
 export async function eliminarPropuesta(id) {

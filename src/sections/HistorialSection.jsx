@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CloudDownload, CloudUpload, Copy, Database, Download, Eye, FolderOpen, History, Link2, LoaderCircle, RefreshCw, Trash2 } from 'lucide-react'
+import { CloudDownload, CloudUpload, Copy, Database, Download, Eye, FileText, FolderOpen, History, Link2, LoaderCircle, RefreshCw, Trash2 } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import { fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { CATEGORIES } from '../config/equipos.js'
@@ -162,6 +162,12 @@ export default function HistorialSection({ irA }) {
                     <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">{propuesta.autor}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-2">
+                        {propuesta.pdf && (
+                          <a href={propuesta.pdf} target="_blank" rel="noreferrer" className={boton} title="Abrir el PDF guardado en Drive">
+                            <FileText className="size-4" aria-hidden="true" />
+                            PDF
+                          </a>
+                        )}
                         {esAjena(propuesta) ? (
                           <button type="button" onClick={() => cargar(propuesta, false)} className={boton} title="Ver esta propuesta sin modificarla">
                             <Eye className="size-4" aria-hidden="true" />
@@ -302,6 +308,11 @@ export default function HistorialSection({ irA }) {
             <li>Copia la URL que termina en <code className="font-mono text-xs text-ink">/exec</code>, pégala arriba y pulsa «Conectar y probar».</li>
             <li>Pulsa «Enviar el catálogo de equipos a la hoja» para llenar las pestañas Paneles, Inversores, Baterias y RSD.</li>
           </ol>
+          <p className="mt-2">
+            <strong>Para actualizar el script</strong> cuando cambie <code className="font-mono text-xs text-ink">Codigo.gs</code>: pega el código nuevo, guarda y entra en{' '}
+            <strong>Implementar → Administrar implementaciones → Editar (lápiz) → Versión: Nueva versión → Implementar</strong>. La URL no cambia. Los PDF se guardan en
+            la carpeta «Propuestas PDF», junto a la hoja.
+          </p>
           <p className="mt-2 text-xs text-ink-dim">
             Desde ese momento cada propuesta guardada se escribe en la pestaña «Propuestas» y la numeración la reparte la hoja. Quien tenga esa URL puede leer y
             escribir en la hoja: no la compartas. La URL se guarda solo en este navegador; en otro dispositivo hay que pegarla de nuevo.
