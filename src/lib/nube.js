@@ -42,10 +42,24 @@ async function interpretar(respuesta) {
   return datos
 }
 
-const leer = async (accion) => interpretar(await fetch(`${leerUrlNube()}?accion=${accion}`))
+// Google a veces responde con una página de error pasajera aunque el script esté bien: se reintenta.
+// Repetir es seguro: guardar y eliminar van por número de propuesta, y pedir número dos veces solo
+// podría saltarse uno, nunca repetirlo.
+async function conReintentos(pedir, intentos = 3) {
+  for (let intento = 1; ; intento++) {
+    try {
+      return await interpretar(await pedir())
+    } catch (error) {
+      if (intento >= intentos) throw error
+      await new Promise((seguir) => setTimeout(seguir, 800 * intento))
+    }
+  }
+}
+
+const leer = (accion) => conReintentos(() => fetch(`${leerUrlNube()}?accion=${accion}`))
 // El cuerpo va como texto plano a propósito: así el navegador no hace la consulta previa (CORS)
 // que Apps Script no sabe responder.
-const escribir = async (cuerpo) => interpretar(await fetch(leerUrlNube(), { method: 'POST', body: JSON.stringify(cuerpo) }))
+const escribir = (cuerpo) => conReintentos(() => fetch(leerUrlNube(), { method: 'POST', body: JSON.stringify(cuerpo) }))
 
 export const nube = {
   probar: () => leer('ping'),
