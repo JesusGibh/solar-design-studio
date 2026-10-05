@@ -17,8 +17,22 @@ const STRINGS_POR_MPPT = 2 // supuesto para estimar cuántos strings admite el i
 
 export const areaPanelM2 = (panel) => (panel?.largo_mm && panel?.ancho_mm ? (panel.largo_mm * panel.ancho_mm) / 1e6 : null)
 export const generacionAnual = (kwp, hsp, pr) => kwp * hsp * pr * DIAS_ANIO
-// Con una sola HSP anual, la generación de cada mes solo varía por sus días.
-export const generacionPorMes = (kwp, hsp, pr) => DIAS_POR_MES.map((dias) => kwp * hsp * pr * dias)
+
+// Reparto de la irradiación a lo largo del año: factor de cada mes sobre la HSP media anual.
+// 'panama' sigue la estación seca (ene–abr) y lluviosa del país; 'uniforme' no aplica estacionalidad.
+export const PERFILES_SOLARES = {
+  panama: { nombre: 'Panamá (estación seca y lluviosa)', factores: [1.128, 1.217, 1.227, 1.143, 0.956, 0.922, 0.92, 0.92, 0.929, 0.892, 0.84, 0.92] },
+  uniforme: { nombre: 'Uniforme todo el año', factores: Array(12).fill(1) },
+}
+export const PERFIL_POR_DEFECTO = 'panama'
+
+// Generación de cada mes. Los factores se normalizan para que el total anual sea exactamente
+// kWp × HSP × PR × 365, sea cual sea el perfil.
+export function generacionPorMes(kwp, hsp, pr, perfil = PERFIL_POR_DEFECTO) {
+  const { factores } = PERFILES_SOLARES[perfil] ?? PERFILES_SOLARES[PERFIL_POR_DEFECTO]
+  const peso = factores.reduce((suma, factor, i) => suma + factor * DIAS_POR_MES[i], 0)
+  return factores.map((factor, i) => (generacionAnual(kwp, hsp, pr) * factor * DIAS_POR_MES[i]) / peso)
+}
 // P_dc (kWp) = consumo anual × cobertura / (365 × HSP × PR)
 export const potenciaDcRequerida = (anualKwh, coberturaPct, hsp, pr) => (anualKwh * (coberturaPct / 100)) / (DIAS_ANIO * hsp * pr)
 
@@ -34,7 +48,10 @@ function candidatos(equipos, marca) {
 
 // Panel óptimo: el de mayor densidad de potencia (W/m²), que es el que más cubre en un techo dado.
 // Se prefieren los que traen dimensiones, porque sin ellas no se puede verificar el techo.
-export function elegirPanel(paneles, marca = '') {
+// Con `id` se respeta el modelo que eligió el usuario (el motor solo calcula cuántos hacen falta).
+export function elegirPanel(paneles, marca = '', id = '') {
+  const elegido = id && paneles.find((panel) => panel.id === id)
+  if (elegido) return elegido
   const validos = candidatos(paneles, marca).filter((panel) => panel.potencia_wp > 0)
   const conDimensiones = validos.filter(areaPanelM2)
   const densidad = (panel) => (areaPanelM2(panel) ? panel.potencia_wp / areaPanelM2(panel) : (panel.eficiencia ?? 0) * 10)
@@ -54,12 +71,14 @@ export function maxPanelesEnTecho(areaTechoM2, panel) {
 // Mejor inversor (y cantidad de unidades) para una potencia DC: de la marca pedida, compatible con la
 // red, DC/AC entre 1.10 y 1.30, sin superar el interruptor principal ni el transformador.
 // Si ninguno cumple todo, devuelve el más cercano en DC/AC junto con el `motivo`, para mostrar la alerta.
-export function elegirInversor({ inversores, datosRed, kwp, marca = '' }) {
+// Con `id` se usa el modelo que eligió el usuario y solo se calcula cuántas unidades hacen falta.
+export function elegirInversor({ inversores, datosRed, kwp, marca = '', id = '' }) {
   const red = getRed(datosRed.tension)
   const deMarca = marca ? ` de ${marca}` : ''
-  const compatibles = candidatos(inversores, marca).filter(
-    (inversor) => esCompatible(inversor, red) && inversor.potencia_ac_nominal_kw > 0,
-  )
+  const elegido = id && inversores.find((inversor) => inversor.id === id && esCompatible(inversor, red) && inversor.potencia_ac_nominal_kw > 0)
+  const compatibles = elegido
+    ? [elegido]
+    : candidatos(inversores, marca).filter((inversor) => esCompatible(inversor, red) && inversor.potencia_ac_nominal_kw > 0)
   if (compatibles.length === 0) return { inversor: null, cantidad: 0, motivo: `No hay inversores${deMarca} en el catálogo para ${red.label}.` }
 
   const centro = (RATIO_DC_AC.min + RATIO_DC_AC.max) / 2
@@ -88,6 +107,16 @@ export function elegirInversor({ inversores, datosRed, kwp, marca = '' }) {
   const optimo = enRatio.find((opcion) => !opcion.fallaInterruptor && !opcion.fallaTransformador)
   if (optimo) return { inversor: optimo.inversor, cantidad: optimo.cantidad, motivo: null }
 
+  if (enRatio.length === 0 && elegido) {
+    // El modelo elegido no cae en el rango con ninguna cantidad: se propone la más cercana a 1.20.
+    const cantidad = Math.max(1, Math.round(kwp / (centro * elegido.potencia_ac_nominal_kw)))
+    const ratio = kwp / (elegido.potencia_ac_nominal_kw * cantidad)
+    return {
+      inversor: elegido,
+      cantidad,
+      motivo: `Con ${cantidad} × ${elegido.modelo} el DC/AC queda en ${ratio.toFixed(2)}, fuera del rango ${RATIO_DC_AC.min.toFixed(2)} – ${RATIO_DC_AC.max.toFixed(2)}.`,
+    }
+  }
   if (enRatio.length === 0) {
     return {
       inversor: null,
@@ -124,7 +153,13 @@ function evaluarStrings({ panel, numPaneles, inversor, cantidad, tempMin }) {
 
   const strings = Math.ceil(numPaneles / maxPorString)
   const porString = Math.floor(numPaneles / strings)
-  Object.assign(resultado, { strings, porString, vocString: Math.ceil(numPaneles / strings) * vocFrio })
+  Object.assign(resultado, {
+    strings,
+    porString,
+    vocString: Math.ceil(numPaneles / strings) * vocFrio, // string más largo, en frío
+    vmpString: vmpCaliente ? porString * vmpCaliente : null, // string más corto, con la celda caliente
+    tempCelda: TEMP_CELDA_CALIENTE,
+  })
   if (porString < minPorString) {
     return { estado: 'danger', ...resultado, problema: `Se necesitan al menos ${minPorString} paneles por string para alcanzar el voltaje MPPT mínimo.` }
   }
@@ -156,7 +191,7 @@ function evaluarTecho({ panel, numPaneles, areaTecho, maxPanelesTecho }) {
 
 // Evalúa un sistema concreto (panel × cantidad + inversor × cantidad). Lo usan ambos modos.
 // `cobertura` es generación anual / consumo anual (1 = 100 %).
-export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, tempMin, areaTecho, maxPanelesTecho, datosRed }) {
+export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, perfil, tempMin, areaTecho, maxPanelesTecho, datosRed }) {
   const kwp = panel && numPaneles ? (panel.potencia_wp * numPaneles) / 1000 : null
   const generacionAnualKwh = kwp ? generacionAnual(kwp, hsp, pr) : null
   const potenciaAcKw = inversor ? inversor.potencia_ac_nominal_kw * cantidad : null
@@ -166,7 +201,8 @@ export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anua
     kwp,
     generacionAnualKwh,
     generacionMensualKwh: generacionAnualKwh && generacionAnualKwh / 12,
-    generacionPorMes: kwp ? generacionPorMes(kwp, hsp, pr) : null,
+    generacionPorMes: kwp ? generacionPorMes(kwp, hsp, pr, perfil) : null,
+    areaCaptacionM2: areaPanelM2(panel) && numPaneles ? areaPanelM2(panel) * numPaneles : null,
     cobertura: generacionAnualKwh && anualKwh ? generacionAnualKwh / anualKwh : null,
     potenciaAcKw,
     ratio: { estado: ratioValor == null ? 'pendiente' : enRango ? 'ok' : ratioValor > 1.5 || ratioValor < 0.8 ? 'danger' : 'warn', valor: ratioValor },
@@ -192,11 +228,14 @@ export function dimensionarAuto({
   datosRed,
   paneles,
   inversores,
+  perfil,
   marcaPanel = '',
   marcaInversor = '',
+  panelId = '',
+  inversorId = '',
 }) {
   if (!anualKwh) return null
-  const panel = elegirPanel(paneles, marcaPanel)
+  const panel = elegirPanel(paneles, marcaPanel, panelId)
   if (!panel) return { sinPanel: true }
 
   const kwpRequerido = potenciaDcRequerida(anualKwh, cobertura, hsp, pr)
@@ -209,7 +248,7 @@ export function dimensionarAuto({
 
   const eleccion =
     numPaneles > 0
-      ? elegirInversor({ inversores, datosRed, kwp, marca: marcaInversor })
+      ? elegirInversor({ inversores, datosRed, kwp, marca: marcaInversor, id: inversorId })
       : { inversor: null, cantidad: 0, motivo: 'El techo no admite ningún panel.' }
   return {
     panel,
@@ -230,6 +269,7 @@ export function dimensionarAuto({
       anualKwh,
       hsp,
       pr,
+      perfil,
       tempMin,
       areaTecho,
       maxPanelesTecho,

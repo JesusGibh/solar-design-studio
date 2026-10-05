@@ -50,7 +50,7 @@ function TextField({ label, value, onChange, placeholder }) {
 }
 
 export default function PropuestaSection() {
-  const { sistema, resumen, red, techo, baterias, parametros, proyecto, actualizar } = useDimensionamiento()
+  const { sistema, resumen, red, techo, ocupados, baterias, parametros, proyecto, actualizar } = useDimensionamiento()
   const { finanzas, propuesta } = proyecto
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
@@ -79,14 +79,17 @@ export default function PropuestaSection() {
   const inflacion = porcentaje(finanzas.inflacion, DEFECTOS_FINANZAS.inflacion)
   const degradacion = porcentaje(finanzas.degradacion, DEFECTOS_FINANZAS.degradacion)
   const factorCo2 = porcentaje(finanzas.factorCo2, DEFECTOS_FINANZAS.factorCo2)
+  const descuento = porcentaje(finanzas.descuento, DEFECTOS_FINANZAS.descuento)
   const proyeccion = proyectar({
     kwp: evaluacion?.kwp,
     generacionAnualKwh: evaluacion?.generacionAnualKwh,
+    consumoAnualKwh: resumen.anualKwh,
     tarifa: resumen.tarifa,
     precioWp,
     costoAdicional: aNumero(finanzas.costoBaterias) ?? 0,
     inflacion,
     degradacion,
+    descuento,
     factorCo2,
   })
 
@@ -99,31 +102,39 @@ export default function PropuestaSection() {
   // Compone la imagen satelital y arma el PDF de 3 hojas. Lo usan la vista previa y la descarga, así
   // que ambas muestran exactamente el mismo documento. Las librerías se cargan aquí, bajo demanda.
   const generarDocumento = async () => {
-    const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }, logo] = await Promise.all([
+    const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }, { cargarRecursosPdf }, logo] = await Promise.all([
       import('jspdf'),
       import('../lib/propuestaPdf.js'),
       import('../lib/mapaEstatico.js'),
+      import('../lib/recursosPdf.js'),
       cargarLogo(marca.logoUrl),
     ])
-    // La portada lleva el render 3D capturado en el visor; sin él, la vista satelital del arreglo.
-    const imagenTecho =
-      techo && !captura
-        ? await capturarTecho({
+    // Vista satelital del arreglo (solo los paneles colocados): acompaña al render 3D o lo sustituye.
+    const [imagenTecho, recursos] = await Promise.all([
+      techo
+        ? capturarTecho({
             vertices: proyecto.techo.vertices,
-            rectangulos: techo.rectangulos,
-            usados: sistema.numPaneles,
+            rectangulos: ocupados.map((indice) => techo.rectangulos[indice]),
             capa: proyecto.techo.fuenteMapa,
             ancho: 1200,
-            alto: 566,
+            alto: 640,
           })
-        : null
+        : null,
+      cargarRecursosPdf(marca),
+    ])
     return {
       sinImagen: Boolean(techo) && !captura && !imagenTecho,
       doc: construirPropuestaPdf(jsPDF, {
+        recursos,
         imagen3d: captura?.imagen ?? null,
         marca: { ...marca, logo },
         autor,
-        propuesta: { ...propuesta, fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) },
+        propuesta: {
+          ...propuesta,
+          fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }),
+          validezDias: Math.floor(aNumero(finanzas.validezDias) ?? 15),
+        },
+        parametros: { hsp: parametros.hsp, pr: parametros.pr, tempMin: parametros.tempMin, inflacion, degradacion, descuento, factorCo2 },
         imagenTecho,
         sistema,
         evaluacion,
@@ -133,7 +144,6 @@ export default function PropuestaSection() {
         bateria: bateria ? { equipo: bateria, cantidad: cantidadBaterias, capacidadKwh, autonomiaHoras } : null,
         consumo: resumen,
         precioWp,
-        supuestos: `Supuestos: HSP ${parametros.hsp} h/día, PR ${parametros.pr}, degradación ${degradacion} %/año, inflación energética ${inflacion} %/año, factor de emisión ${factorCo2} kg CO2/kWh. El ahorro supone que toda la energía generada se aprovecha o se acredita a la misma tarifa.`,
       }),
     }
   }
@@ -219,6 +229,7 @@ export default function PropuestaSection() {
           </label>
           <TextField label="Nombre del cliente" value={propuesta.cliente} placeholder="Cliente" onChange={(cliente) => cambiarPropuesta({ cliente })} />
           <TextField label="Dirección / proyecto" value={propuesta.direccion} placeholder="Dirección del sitio" onChange={(direccion) => cambiarPropuesta({ direccion })} />
+          <TextField label="Símbolo de moneda en el PDF" value={propuesta.moneda} placeholder="B/." onChange={(moneda) => cambiarPropuesta({ moneda })} />
         </div>
         {descarga.estado === 'error' && (
           <p role="alert" className="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
@@ -228,6 +239,17 @@ export default function PropuestaSection() {
         {descarga.sinImagen && (
           <p className="mt-3 rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
             El PDF se generó sin la vista satelital: no se pudieron descargar las imágenes del mapa.
+          </p>
+        )}
+        {techo?.cantidad != null && sistema?.numPaneles > 0 && ocupados.length !== sistema.numPaneles && (
+          <p className="mt-3 rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+            En el techo hay {ocupados.length} paneles colocados y el sistema está dimensionado con {sistema.numPaneles}: las imágenes y las
+            cifras de la propuesta no coincidirán. Ajusta el acomodo en la vista 3D o usa esos paneles en el sistema.
+          </p>
+        )}
+        {captura && captura.paneles !== ocupados.length && (
+          <p className="mt-3 rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+            El render 3D guardado es de un diseño de {captura.paneles} paneles: vuelve a capturarlo en Diseño.
           </p>
         )}
         {!puedeDescargar && <p className="mt-3 text-xs text-ink-dim">Define el sistema en Consumo o Diseño para poder descargar la propuesta.</p>}
@@ -339,6 +361,21 @@ export default function PropuestaSection() {
                 hint="kg de CO₂ por kWh; depende del país."
                 onChange={(factorCo2) => cambiar({ factorCo2 })}
               />
+              <NumberField
+                label="Tasa de descuento"
+                unit="%/año"
+                value={finanzas.descuento}
+                placeholder="8"
+                hint="Para el valor actual neto (VAN)."
+                onChange={(valor) => cambiar({ descuento: valor })}
+              />
+              <NumberField
+                label="Validez de la propuesta"
+                unit="días"
+                value={finanzas.validezDias}
+                placeholder="15"
+                onChange={(validezDias) => cambiar({ validezDias })}
+              />
             </div>
           </Panel>
 
@@ -348,13 +385,16 @@ export default function PropuestaSection() {
               <Stat label="Ahorro del año 1" value={dinero(proyeccion?.ahorroAnual)} />
               <Stat label="Payback simple" value={fmt(proyeccion?.paybackSimple, 1)} unit="años" />
               <Stat label="ROI a 25 años" value={fmt(proyeccion?.roi, 0)} unit="%" />
+              <Stat label="TIR" value={fmt(proyeccion?.tir, 1)} unit="%" />
+              <Stat label="VAN a 25 años" value={dinero(proyeccion?.van)} />
+              <Stat label="Costo nivelado" value={proyeccion ? fmt(proyeccion.lcoe, 3) : '—'} unit="$/kWh" />
               <Stat label="Ganancia neta" value={dinero(proyeccion?.gananciaNeta)} />
               <Stat label="Tarifa usada" value={resumen.tarifa == null ? '—' : fmt(resumen.tarifa, 3)} unit="$/kWh" />
             </div>
             <p className="mt-3 text-xs text-ink-dim">
-              Ahorro anual = generación × tarifa, con la generación bajando por degradación y la tarifa subiendo por
-              inflación cada año. Supone que toda la energía generada se aprovecha o se acredita a la misma tarifa. Payback
-              simple = costo total ÷ ahorro del año 1; ROI = ganancia neta ÷ costo total.
+              Ahorro anual = energía generada (hasta el consumo anual del sitio) × tarifa, con la generación bajando por
+              degradación y la tarifa subiendo por inflación cada año. Lo generado por encima del consumo no suma ahorro.
+              Payback simple = costo total ÷ ahorro del año 1; ROI = ganancia neta ÷ costo total.
             </p>
           </Panel>
         </div>
@@ -369,7 +409,7 @@ export default function PropuestaSection() {
                 </p>
                 <GraficoMensual consumo={resumen.mensual} generacion={evaluacion.generacionPorMes} />
                 <p className="mt-2 text-xs text-ink-dim">
-                  Con una sola HSP anual, la generación de cada mes solo varía por sus días; no refleja la estacionalidad del sitio.
+                  La generación anual se reparte entre los meses con el perfil de irradiación elegido en Consumo.
                 </p>
               </>
             ) : (

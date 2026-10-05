@@ -37,8 +37,11 @@ export function useDimensionamiento() {
   // El panel se conoce antes que la cantidad, así que el techo se puede llenar primero y su
   // capacidad física entra como límite al dimensionamiento.
   const panel = useMemo(
-    () => (esAuto ? elegirPanel(catalogo.paneles, marcaPanel) : (catalogo.paneles.find((equipo) => equipo.id === dimensionamiento.panelId) ?? null)),
-    [esAuto, catalogo, marcaPanel, dimensionamiento.panelId],
+    () =>
+      esAuto
+        ? elegirPanel(catalogo.paneles, marcaPanel, dimensionamiento.panelAutoId)
+        : (catalogo.paneles.find((equipo) => equipo.id === dimensionamiento.panelId) ?? null),
+    [esAuto, catalogo, marcaPanel, dimensionamiento.panelAutoId, dimensionamiento.panelId],
   )
 
   const techo = useMemo(
@@ -51,7 +54,8 @@ export function useDimensionamiento() {
         retranqueo: Math.max(0, numero(datosTecho.retranqueo, 0.5)),
         azimutManual: datosTecho.azimut === '' ? null : numero(datosTecho.azimut, null),
       }),
-    [datosTecho, panel],
+    // Solo la geometría: mover el mapa o acomodar paneles no debe recalcular (ni redibujar en 3D) el techo.
+    [datosTecho.vertices, datosTecho.orientacion, datosTecho.inclinacion, datosTecho.retranqueo, datosTecho.azimut, panel],
   )
 
   const parametros = useMemo(
@@ -60,13 +64,24 @@ export function useDimensionamiento() {
       cobertura: aNumero(dimensionamiento.cobertura) ?? DEFECTOS.cobertura,
       hsp: aNumero(dimensionamiento.hsp) ?? DEFECTOS.hsp,
       pr: aNumero(dimensionamiento.pr) ?? DEFECTOS.pr,
+      perfil: dimensionamiento.perfilSolar,
       tempMin: numero(dimensionamiento.tempMin, DEFECTOS.tempMin),
       // Con techo trazado, su área y su conteo físico sustituyen al área escrita a mano.
       areaTecho: techo ? techo.areaM2 : aNumero(dimensionamiento.areaTecho),
       maxPanelesTecho: techo?.cantidad ?? undefined,
       datosRed,
     }),
-    [resumen.anualKwh, dimensionamiento.cobertura, dimensionamiento.hsp, dimensionamiento.pr, dimensionamiento.tempMin, dimensionamiento.areaTecho, techo, datosRed],
+    [
+      resumen.anualKwh,
+      dimensionamiento.cobertura,
+      dimensionamiento.hsp,
+      dimensionamiento.pr,
+      dimensionamiento.perfilSolar,
+      dimensionamiento.tempMin,
+      dimensionamiento.areaTecho,
+      techo,
+      datosRed,
+    ],
   )
 
   const auto = useMemo(
@@ -78,8 +93,10 @@ export function useDimensionamiento() {
         inversores: catalogo.inversores,
         marcaPanel,
         marcaInversor,
+        panelId: dimensionamiento.panelAutoId,
+        inversorId: dimensionamiento.inversorAutoId,
       }),
-    [parametros, dimensionamiento.ajustarATecho, catalogo, marcaPanel, marcaInversor],
+    [parametros, dimensionamiento.ajustarATecho, dimensionamiento.panelAutoId, dimensionamiento.inversorAutoId, catalogo, marcaPanel, marcaInversor],
   )
   const autoValido = auto && !auto.sinPanel ? auto : null
 
@@ -110,6 +127,30 @@ export function useDimensionamiento() {
     actualizar('dimensionamiento', esAuto ? { ajustarATecho: true } : { numPaneles: String(maximoTecho) })
   }
 
+  // Posiciones del techo que llevan panel. Por defecto las primeras N del empaquetado; si el usuario
+  // acomodó paneles a mano en la vista 3D (y la cuadrícula no ha cambiado), manda su selección.
+  const firmaTecho = techo?.cantidad ? `${panel?.id}|${techo.cantidad}|${techo.rectangulos[0][0].map((n) => n.toFixed(6))}|${techo.rectangulos.at(-1)[2].map((n) => n.toFixed(6))}` : null
+  const acomodoValido = Boolean(firmaTecho) && datosTecho.acomodo?.firma === firmaTecho
+  const numSistema = sistema?.numPaneles ?? 0
+  const ocupados = useMemo(() => {
+    if (!techo?.cantidad) return []
+    if (acomodoValido) return datosTecho.acomodo.indices.filter((indice) => indice < techo.cantidad)
+    return Array.from({ length: Math.min(numSistema, techo.cantidad) }, (_, indice) => indice)
+  }, [techo, acomodoValido, datosTecho.acomodo, numSistema])
+
+  // Alterna un panel en una posición; la primera vez parte del relleno automático que se estaba viendo.
+  const alternarPanel = (indice) => {
+    const indices = ocupados.includes(indice) ? ocupados.filter((actual) => actual !== indice) : [...ocupados, indice].sort((a, b) => a - b)
+    actualizar('techo', { acomodo: { firma: firmaTecho, indices } })
+  }
+  const rellenoAutomatico = () => actualizar('techo', { acomodo: null })
+  // Lleva al sistema la cantidad de paneles colocados a mano (pasa a configuración personalizada).
+  const usarColocados = () => {
+    if (!panel) return
+    if (sistema?.inversor) actualizar('inversor', { id: sistema.inversor.id, cantidad: String(sistema.cantidad) })
+    actualizar('dimensionamiento', { modo: 'manual', panelId: panel.id, numPaneles: String(ocupados.length) })
+  }
+
   return {
     esAuto,
     cambiarModo,
@@ -119,6 +160,11 @@ export function useDimensionamiento() {
     auto,
     sistema,
     techo,
+    ocupados,
+    acomodoManual: acomodoValido,
+    alternarPanel,
+    rellenoAutomatico,
+    usarColocados,
     maximoTecho,
     excesoTecho,
     ajustarAlTecho,

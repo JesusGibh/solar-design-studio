@@ -102,11 +102,12 @@ function crearCubo(contenedor) {
 }
 
 // Monta la escena en `contenedor` y devuelve { capturar, destruir }.
-//   plano: { poligono: [{x, y}], paneles: [[{x, y} × 4]] } · usados: cuántos paneles dibujar
+//   plano: { poligono: [{x, y}], paneles: [[{x, y} × 4]] } · ocupados: índices de las posiciones con panel
+//   alAlternar(indice): se llama al tocar una posición en el modo de acomodo
 //   inclinacion y azimut en grados (el azimut es hacia donde cae el agua) · altura: m del suelo al alero
 //   terreno: { canvas, metros } con la imagen satelital centrada en el origen del plano, o null
 //   cuboContenedor: elemento donde dibujar el cubo de orientación (opcional)
-export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, altura, terreno, cuboContenedor }) {
+export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinacion, azimut, altura, terreno, cuboContenedor }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -185,9 +186,19 @@ export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, al
   })
 
   // --- Paneles: cada uno es su propia malla (marco + vidrio con celdas), apoyada sobre el plano del techo.
-  const paneles = plano.paneles.slice(0, usados)
-  if (paneles.length) {
-    const [p0, p1, , p3] = paneles[0].map((p) => punto(p))
+  // Se crea una posición por cada hueco del empaquetado: el panel (visible si está colocado) y una
+  // "huella" translúcida que marca dónde se puede colocar uno en el modo de acomodo.
+  const posiciones = []
+  let enEdicion = false
+  const mostrar = (conPanel) => {
+    posiciones.forEach(({ panel, huella }, indice) => {
+      panel.visible = conPanel.has(indice)
+      huella.visible = enEdicion && !conPanel.has(indice)
+    })
+  }
+  let conPanel = new Set(ocupados)
+  if (plano.paneles.length) {
+    const [p0, p1, , p3] = plano.paneles[0].map((p) => punto(p))
     const ancho = p0.distanceTo(p1)
     const largo = p0.distanceTo(p3) // medido sobre la pendiente: ya es el largo real del módulo
     const geometriaMarco = new THREE.BoxGeometry(ancho, largo, GROSOR_PANEL)
@@ -196,13 +207,15 @@ export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, al
     const materialVidrio = new THREE.MeshPhysicalMaterial({
       map: ancho < largo ? texturaFotovoltaica(6, 12) : texturaFotovoltaica(12, 6),
       // Reflejo sutil: lo justo para que el vidrio brille sin lavar el azul de las celdas.
-      metalness: 0.25,
-      roughness: 0.3,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.25,
-      envMapIntensity: 0.4,
+      metalness: 0.05,
+      roughness: 0.38,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.35,
+      envMapIntensity: 0.12,
     })
-    for (const esquinas of paneles) {
+    const geometriaHuella = new THREE.BoxGeometry(ancho - 0.04, largo - 0.04, 0.01)
+    const materialHuella = new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.28, depthWrite: false })
+    plano.paneles.forEach((esquinas, indice) => {
       const [a, b, c, d] = esquinas.map((p) => punto(p))
       const ejeFila = b.clone().sub(a).normalize()
       const ejePendiente = d.clone().sub(a).normalize()
@@ -221,8 +234,16 @@ export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, al
       const vidrio = new THREE.Mesh(geometriaVidrio, materialVidrio)
       vidrio.setRotationFromMatrix(orientacion)
       vidrio.position.copy(centro).addScaledVector(normal, SEPARACION_TECHO + GROSOR_PANEL + 0.001)
-      escena.add(marco, vidrio)
-    }
+      const panel = new THREE.Group().add(marco, vidrio)
+      const huella = new THREE.Mesh(geometriaHuella, materialHuella)
+      huella.setRotationFromMatrix(orientacion)
+      huella.position.copy(centro).addScaledVector(normal, 0.03)
+      // El índice permite saber qué posición se tocó al acomodar paneles.
+      marco.userData.indice = huella.userData.indice = indice
+      posiciones.push({ panel, huella, objetivos: [marco, huella] })
+      escena.add(panel, huella)
+    })
+    mostrar(conPanel)
   }
 
   // --- Terreno: la imagen satelital a escala real, centrada en el origen del plano.
@@ -267,6 +288,26 @@ export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, al
 
   const cubo = cuboContenedor ? crearCubo(cuboContenedor) : null
 
+  // Acomodo de paneles: un toque (sin arrastre, que es girar la cámara) sobre una posición la alterna.
+  const rayo = new THREE.Raycaster()
+  let pulsado = null
+  const alPulsar = (evento) => {
+    pulsado = { x: evento.clientX, y: evento.clientY }
+  }
+  const alSoltar = (evento) => {
+    if (!enEdicion || !pulsado || Math.hypot(evento.clientX - pulsado.x, evento.clientY - pulsado.y) > 5) return
+    const caja = renderer.domElement.getBoundingClientRect()
+    rayo.setFromCamera(
+      new THREE.Vector2(((evento.clientX - caja.left) / caja.width) * 2 - 1, -((evento.clientY - caja.top) / caja.height) * 2 + 1),
+      camara,
+    )
+    const visibles = posiciones.flatMap(({ panel, huella, objetivos }) => (panel.visible ? [objetivos[0]] : huella.visible ? [objetivos[1]] : []))
+    const [tocado] = rayo.intersectObjects(visibles, false)
+    if (tocado) alAlternar?.(tocado.object.userData.indice)
+  }
+  renderer.domElement.addEventListener('pointerdown', alPulsar)
+  renderer.domElement.addEventListener('pointerup', alSoltar)
+
   const ajustar = () => {
     const { clientWidth, clientHeight } = contenedor
     renderer.setSize(clientWidth, clientHeight)
@@ -290,11 +331,24 @@ export function crearEscena(contenedor, { plano, usados, inclinacion, azimut, al
       renderer.setSize(ancho, alto, false)
       camara.aspect = ancho / alto
       camara.updateProjectionMatrix()
+      // Las huellas del modo de acomodo son una ayuda de edición: no salen en la imagen.
+      for (const { huella } of posiciones) huella.visible = false
       renderer.render(escena, camara)
       const imagen = renderer.domElement.toDataURL('image/png')
+      mostrar(conPanel)
       renderer.setPixelRatio(proporcion)
       ajustar()
       return imagen
+    },
+    // Cambia qué posiciones llevan panel, sin reconstruir la escena.
+    actualizarOcupados(indices) {
+      conPanel = new Set(indices)
+      mostrar(conPanel)
+    },
+    // Modo de acomodo: muestra las huellas libres y permite alternar paneles con un toque.
+    setEdicion(activo) {
+      enEdicion = activo
+      mostrar(conPanel)
     },
     // Vista cenital, como al pulsar "TOP" en el cubo.
     vistaSuperior() {

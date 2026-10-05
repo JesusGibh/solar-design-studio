@@ -41,9 +41,9 @@ function celdas([a, b, c, d]) {
 // Mapa satelital con trazado del techo al estilo de la regla poligonal de Google Earth: cada clic
 // añade un vértice, cada lado muestra su cota y el área se actualiza mientras se dibuja.
 // No guarda el trazo: recibe `vertices` y avisa cada cambio con `onVertices`.
-//   rectangulos: paneles que caben (cada uno, 4 [lat, lng]) · usados: cuántos ocupa el sistema
+//   rectangulos: posiciones donde cabe un panel (cada una, 4 [lat, lng]) · ocupados: índices con panel
 //   vista / onVista: centro y zoom recordados · capa / onCapa: fuente de imágenes ('esri' | 'google')
-export default function MapaTecho({ vertices, onVertices, rectangulos, usados = rectangulos.length, vista, onVista, capa = 'google', onCapa }) {
+export default function MapaTecho({ vertices, onVertices, rectangulos, ocupados, vista, onVista, capa = 'google', onCapa }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const capas = useRef(null)
@@ -216,8 +216,9 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
     const grupo = capas.current.paneles
     const renderer = capas.current.lienzo
     grupo.clearLayers()
-    const delSistema = rectangulos.slice(0, usados)
-    const libres = rectangulos.slice(usados)
+    const conPanel = new Set(ocupados)
+    const delSistema = rectangulos.filter((_, indice) => conPanel.has(indice))
+    const libres = rectangulos.filter((_, indice) => !conPanel.has(indice))
     // Un solo multipolígono por grupo (cada rectángulo es un anillo propio), más liviano que cientos de capas.
     if (libres.length) {
       L.polygon(libres.map((r) => [r]), { renderer, interactive: false, color: '#e6e9ef', weight: 1, opacity: 0.55, dashArray: '3 3', fillColor: '#e6e9ef', fillOpacity: 0.08 }).addTo(grupo)
@@ -228,7 +229,7 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
         L.polyline(delSistema.flatMap(celdas), { renderer, interactive: false, color: '#3f5f97', weight: 0.6, opacity: 0.9 }).addTo(grupo)
       }
     }
-  }, [rectangulos, usados, zoom])
+  }, [rectangulos, ocupados, zoom])
 
   const irA = (posicion) => mapa.current.setView(posicion, Math.max(mapa.current.getZoom(), ZOOM_SITIO))
 

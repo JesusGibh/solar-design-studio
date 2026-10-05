@@ -51,9 +51,8 @@ export async function componerTerreno({ centro, metrosMinimos, capa, px = 2048 }
 }
 
 // Devuelve un data URL JPEG, o null si no hay techo trazado o el navegador no dejó exportar la imagen.
-//   usados: cuántos de los rectángulos pertenecen al sistema (los demás no se dibujan)
-//   capa: fuente de imágenes ('esri' | 'google'), la misma que se ve en el mapa
-export async function capturarTecho({ vertices, rectangulos, usados = rectangulos.length, capa = 'esri', ancho = 1200, alto = 620 }) {
+//   rectangulos: solo los paneles colocados · capa: fuente de imágenes, la misma que se ve en el mapa
+export async function capturarTecho({ vertices, rectangulos, capa = 'google', ancho = 1200, alto = 620 }) {
   if (!vertices || vertices.length < 3) return null
 
   // Zoom de encuadre: el más cercano en el que el techo ocupa como mucho el 70 % de la imagen.
@@ -102,7 +101,7 @@ export async function capturarTecho({ vertices, rectangulos, usados = rectangulo
   }
 
   // Paneles con el mismo aspecto que en el mapa: celda azul marino, marco claro y retícula de celdas.
-  for (const rectangulo of rectangulos.slice(0, usados)) {
+  for (const rectangulo of rectangulos) {
     trazar(rectangulo)
     ctx.fillStyle = '#0b1a36'
     ctx.fill()

@@ -23,8 +23,11 @@ export const PROYECTO_INICIAL = {
     tempMin: '10',
     areaTecho: '', // m² escritos a mano; se usa solo si no hay techo trazado
     ajustarATecho: false, // recortar el cálculo automático a lo que cabe en el techo
+    perfilSolar: 'panama', // reparto mensual de la irradiación (ver PERFILES_SOLARES)
     marcaPanel: '', // '' = cualquiera / óptimo
     marcaInversor: '',
+    panelAutoId: '', // modelo fijado en el cálculo automático ('' = el óptimo de la marca)
+    inversorAutoId: '',
     panelId: '',
     numPaneles: '',
   },
@@ -38,15 +41,21 @@ export const PROYECTO_INICIAL = {
     inclinacion: '10', // °
     altura: '5', // m del suelo al borde bajo del techo (solo para la vista 3D)
     azimut: '', // ° ; vacío = estimado a partir del trazo
+    // Paneles colocados a mano en la vista 3D: { firma, indices } sobre las posiciones del empaquetado.
+    // La firma identifica la cuadrícula; si esta cambia (otro panel, retranqueo…), el acomodo se descarta.
+    acomodo: null,
   },
   // marca: clave de config/brands.js · autor: clave de config/authors.js
-  propuesta: { id: '', marca: 'solar-5-estrellas', autor: 'jesus-ariza', cliente: '', direccion: '' },
+  // moneda: símbolo con el que salen los montos en el PDF (el balboa va a la par del dólar)
+  propuesta: { id: '', marca: 'solar-5-estrellas', autor: 'jesus-ariza', cliente: '', direccion: '', moneda: 'B/.' },
   finanzas: {
     precioWp: '', // $/Wp instalado
     bateriaId: '', // batería del catálogo incluida en la propuesta
     bateriaCantidad: '1',
     costoBaterias: '', // costo adicional por almacenamiento
     inflacion: '3', // % anual del costo de la energía
+    descuento: '8', // % anual para el valor actual neto
+    validezDias: '15', // vigencia de la propuesta
     degradacion: '0.5', // % anual del módulo
     factorCo2: '0.5', // kg CO₂ por kWh
   },

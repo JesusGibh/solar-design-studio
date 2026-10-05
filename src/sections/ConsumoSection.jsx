@@ -6,6 +6,7 @@ import PdfDropzone from '../components/PdfDropzone.jsx'
 import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { useProyecto } from '../hooks/useProyecto.js'
 import { MESES, aNumero, resumenConsumo } from '../lib/consumo.js'
+import { PERFILES_SOLARES, PERFIL_POR_DEFECTO } from '../lib/dimensionamiento.js'
 import { REDES, getRed } from '../lib/electrico.js'
 
 const INTERRUPTORES = [100, 125, 150, 200, 225, 400, 600, 800]
@@ -260,6 +261,23 @@ export default function ConsumoSection() {
               hint="Porcentaje del consumo anual que debe generar el sistema."
               onChange={(cobertura) => actualizar('dimensionamiento', { cobertura })}
             />
+            <label className="block sm:col-span-2">
+              <span className={labelClass}>Perfil mensual de irradiación</span>
+              <select
+                value={dimensionamiento.perfilSolar in PERFILES_SOLARES ? dimensionamiento.perfilSolar : PERFIL_POR_DEFECTO}
+                onChange={(event) => actualizar('dimensionamiento', { perfilSolar: event.target.value })}
+                className={`${inputClass} font-sans`}
+              >
+                {Object.entries(PERFILES_SOLARES).map(([id, perfil]) => (
+                  <option key={id} value={id}>
+                    {perfil.nombre}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-ink-dim">
+                Reparte la generación anual entre los meses; el total del año no cambia.
+              </span>
+            </label>
           </div>
         </Panel>
       </div>

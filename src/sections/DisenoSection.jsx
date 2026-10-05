@@ -18,12 +18,26 @@ const ORIENTACIONES = [
 ]
 
 export default function DisenoSection() {
-  const { proyecto, actualizar, parametros, sistema, techo, maximoTecho, excesoTecho, ajustarAlTecho } = useDimensionamiento()
+  const {
+    proyecto,
+    actualizar,
+    parametros,
+    sistema,
+    techo,
+    ocupados,
+    acomodoManual,
+    alternarPanel,
+    rellenoAutomatico,
+    usarColocados,
+    maximoTecho,
+    excesoTecho,
+    ajustarAlTecho,
+  } = useDimensionamiento()
   const datos = proyecto.techo
   const panel = sistema?.panel
   const cambiar = (cambios) => actualizar('techo', cambios)
   const trazado = datos.vertices.length >= 3
-  const usados = Math.min(sistema?.numPaneles ?? 0, techo?.cantidad ?? 0)
+  const usados = ocupados.length
   const [vista3d, setVista3d] = useState(false)
   const captura = useCaptura3d()
 
@@ -33,8 +47,13 @@ export default function DisenoSection() {
         <Suspense fallback={null}>
           <Vista3D
             plano={techo.plano}
-            usados={usados}
-            kwp={(usados * (panel?.potencia_wp ?? 0)) / 1000}
+            ocupados={ocupados}
+            requeridos={sistema?.numPaneles ?? 0}
+            potenciaWp={panel?.potencia_wp ?? 0}
+            acomodoManual={acomodoManual}
+            onAlternar={alternarPanel}
+            onRellenoAutomatico={rellenoAutomatico}
+            onUsarColocados={usarColocados}
             inclinacion={Math.min(60, Math.max(0, Number(datos.inclinacion) || 0))}
             azimut={techo.azimut}
             altura={Math.min(40, Math.max(2, Number(datos.altura) || 5))}
@@ -50,7 +69,7 @@ export default function DisenoSection() {
               vertices={datos.vertices}
               onVertices={(vertices) => cambiar({ vertices })}
               rectangulos={techo?.rectangulos ?? []}
-              usados={usados}
+              ocupados={ocupados}
               vista={datos.vista}
               onVista={(vista) => cambiar({ vista })}
               capa={datos.fuenteMapa}
@@ -79,14 +98,14 @@ export default function DisenoSection() {
             <button
               type="button"
               onClick={() => setVista3d(true)}
-              disabled={usados === 0}
+              disabled={!techo?.cantidad}
               className="flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
             >
               <Box className="size-4" aria-hidden="true" />
               Vista 3D del Sistema
             </button>
-            {usados === 0 ? (
-              <p className="text-xs text-ink-dim">Traza el techo y define el sistema para ver sus paneles en 3D.</p>
+            {!techo?.cantidad ? (
+              <p className="text-xs text-ink-dim">Traza el techo y define el panel para ver y acomodar los paneles en 3D.</p>
             ) : captura ? (
               <div className="flex items-center gap-3 text-xs text-ink-muted">
                 <img src={captura.imagen} alt="Captura 3D guardada" className="h-12 rounded border border-line" />

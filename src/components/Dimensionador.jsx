@@ -94,6 +94,9 @@ export default function Dimensionador() {
   // Una marca de inversor que no existe para la red actual equivale a "cualquiera".
   const marcaInversor = marcasInversor.includes(dimensionamiento.marcaInversor) ? dimensionamiento.marcaInversor : ''
 
+  const panelesDeMarca = dimensionamiento.marcaPanel ? paneles.filter((equipo) => equipo.marca === dimensionamiento.marcaPanel) : paneles
+  const inversoresDeMarca = marcaInversor ? inversoresCompatibles.filter((equipo) => equipo.marca === marcaInversor) : inversoresCompatibles
+
   const evaluacion = sistema?.evaluacion
   const { ratio, strings, techo, interconexion } = evaluacion ?? {}
 
@@ -117,14 +120,38 @@ export default function Dimensionador() {
         {esAuto ? (
           <div className="mt-4 grid gap-3">
             <div className="grid grid-cols-2 gap-3">
-              <SelectMarca label="Marca de panel" value={dimensionamiento.marcaPanel} marcas={marcasPanel} onChange={(marcaPanel) => cambiar({ marcaPanel })} />
+              <SelectMarca
+                label="Marca de panel"
+                value={dimensionamiento.marcaPanel}
+                marcas={marcasPanel}
+                onChange={(marcaPanel) => cambiar({ marcaPanel, panelAutoId: '' })}
+              />
               <SelectMarca
                 label="Marca de inversor"
                 value={marcaInversor}
                 marcas={marcasInversor}
-                onChange={(valor) => cambiar({ marcaInversor: valor })}
+                onChange={(valor) => cambiar({ marcaInversor: valor, inversorAutoId: '' })}
               />
             </div>
+            {/* Con un modelo elegido, el cálculo solo decide cuántas unidades hacen falta. */}
+            <SelectEquipo
+              label="Modelo de panel"
+              value={panelesDeMarca.some((equipo) => equipo.id === dimensionamiento.panelAutoId) ? dimensionamiento.panelAutoId : ''}
+              onChange={(panelAutoId) => cambiar({ panelAutoId })}
+              equipos={panelesDeMarca}
+              clave="potencia_wp"
+              unidad="Wp"
+              vacio="Óptimo (mayor potencia por m²)"
+            />
+            <SelectEquipo
+              label="Modelo de inversor"
+              value={inversoresDeMarca.some((equipo) => equipo.id === dimensionamiento.inversorAutoId) ? dimensionamiento.inversorAutoId : ''}
+              onChange={(inversorAutoId) => cambiar({ inversorAutoId })}
+              equipos={inversoresDeMarca}
+              clave="potencia_ac_nominal_kw"
+              unidad="kW"
+              vacio="Óptimo (DC/AC más cercano a 1.20)"
+            />
 
             {!auto ? (
               <p className="rounded border border-line bg-base px-3 py-2 text-sm text-ink-muted">
