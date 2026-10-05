@@ -1,0 +1,241 @@
+id,categoria,marca,modelo,potencia_wp,voc,isc,vmp,imp,coef_temp_voc,largo_mm,ancho_mm,eficiencia,peso_kg,potencia_ac_nominal_kw,tipo_red,mppt_num,v_mppt_min,v_mppt_max,voc_max,isc_max_mppt,corriente_max_salida_ac,capacidad_kwh,voltaje_nominal_v,tipo_quimica,acoplamiento,potencia_max_descarga_kw,max_input_current_a,max_input_voltage_v,canales,fuente
+hoyuan-ds-nt10-72gdf-hy-565w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 565W,565,51.44,13.83,43.15,13.09,-0.24,,,21.9,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+hoyuan-ds-nt10-72gdf-hy-570w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 570W,570,51.6,13.89,43.35,13.15,-0.24,,,22.1,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+hoyuan-ds-nt10-72gdf-hy-575w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 575W,575,51.75,13.95,43.56,13.2,-0.24,,,22.3,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+hoyuan-ds-nt10-72gdf-hy-580w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 580W,580,51.9,14.01,43.75,13.26,-0.24,,,22.5,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+hoyuan-ds-nt10-72gdf-hy-585w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 585W,585,52.05,14.07,43.96,13.31,-0.24,,,22.6,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+longi-lr7-60hvhl-535m,PANEL_SOLAR,LONGi,LR7-60HVHL-535M,535,44.78,15.15,37.01,14.46,-0.2,1990,1134,23.7,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-60hvhl-540m,PANEL_SOLAR,LONGi,LR7-60HVHL-540M,540,44.88,15.25,37.11,14.55,-0.2,1990,1134,23.9,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-60hvhl-545m,PANEL_SOLAR,LONGi,LR7-60HVHL-545M,545,44.98,15.35,37.21,14.65,-0.2,1990,1134,24.2,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-60hvhl-550m,PANEL_SOLAR,LONGi,LR7-60HVHL-550M,550,45.08,15.45,37.31,14.74,-0.2,1990,1134,24.4,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-60hvhl-555m,PANEL_SOLAR,LONGi,LR7-60HVHL-555M,555,45.18,15.55,37.41,14.84,-0.2,1990,1134,24.6,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-60hvhl-560m,PANEL_SOLAR,LONGi,LR7-60HVHL-560M,560,45.28,15.65,37.51,14.93,-0.2,1990,1134,24.8,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
+longi-lr7-72hvd-640m,PANEL_SOLAR,LONGi,LR7-72HVD-640M,640,54.02,14.98,44.67,14.33,-0.2,2382,1134,23.69,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-645m,PANEL_SOLAR,LONGi,LR7-72HVD-645M,645,54.12,15.06,44.77,14.41,-0.2,2382,1134,23.88,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-650m,PANEL_SOLAR,LONGi,LR7-72HVD-650M,650,54.22,15.14,44.87,14.49,-0.2,2382,1134,24.06,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-655m,PANEL_SOLAR,LONGi,LR7-72HVD-655M,655,54.32,15.22,44.97,14.57,-0.2,2382,1134,24.25,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-660m,PANEL_SOLAR,LONGi,LR7-72HVD-660M,660,54.42,15.3,45.07,14.65,-0.2,2382,1134,24.43,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-665m,PANEL_SOLAR,LONGi,LR7-72HVD-665M,665,54.52,15.38,45.17,14.72,-0.2,2382,1134,24.62,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvd-670m,PANEL_SOLAR,LONGi,LR7-72HVD-670M,670,54.62,15.46,45.27,14.8,-0.2,2382,1134,24.8,33,,,,,,,,,,,,,,,,,LR7-72HVD 640-670M （30-30&15Frame）- Scientist.pdf
+longi-lr7-72hvh-630m,PANEL_SOLAR,LONGi,LR7-72HVH-630M,630,53.5,14.97,44.16,14.27,-0.2,2382,1134,23.3,28.5,,,,,,,,,,,,,,,,,LONGI LR7-72HVH-650M.pdf
+longi-lr7-72hvh-635m,PANEL_SOLAR,LONGi,LR7-72HVH-635M,635,53.6,15.05,44.26,14.35,-0.2,2382,1134,23.5,28.5,,,,,,,,,,,,,,,,,LONGI LR7-72HVH-650M.pdf
+longi-lr7-72hvh-640m,PANEL_SOLAR,LONGi,LR7-72HVH-640M,640,53.7,15.13,44.36,14.43,-0.2,2382,1134,23.7,28.5,,,,,,,,,,,,,,,,,LONGI LR7-72HVH-650M.pdf
+longi-lr7-72hvh-645m,PANEL_SOLAR,LONGi,LR7-72HVH-645M,645,53.8,15.21,44.46,14.51,-0.2,2382,1134,23.9,28.5,,,,,,,,,,,,,,,,,LONGI LR7-72HVH-650M.pdf
+longi-lr7-72hvh-650m,PANEL_SOLAR,LONGi,LR7-72HVH-650M,650,53.9,15.29,44.56,14.59,-0.2,2382,1134,24.1,28.5,,,,,,,,,,,,,,,,,LONGI LR7-72HVH-650M.pdf
+longi-lr7-72hvh-655m,PANEL_SOLAR,LONGi,LR7-72HVH-655M,655,54,15.37,44.66,14.67,-0.2,2382,1134,24.2,28.5,,,,,,,,,,,,,,,,,LONGI HIMO 7 LR8-66HGD-655M.pdf
+longi-lr7-72hvh-660m,PANEL_SOLAR,LONGi,LR7-72HVH-660M,660,54.1,15.45,44.76,14.75,-0.2,2382,1134,24.4,28.5,,,,,,,,,,,,,,,,,LONGI HIMO 7 LR8-66HGD-655M.pdf
+longi-lr7-72hvh-665m,PANEL_SOLAR,LONGi,LR7-72HVH-665M,665,54.2,15.52,44.86,14.83,-0.2,2382,1134,24.6,28.5,,,,,,,,,,,,,,,,,LONGI HIMO 7 LR8-66HGD-655M.pdf
+longi-lr7-72hvh-670m,PANEL_SOLAR,LONGi,LR7-72HVH-670M,670,54.3,15.6,44.96,14.91,-0.2,2382,1134,24.8,28.5,,,,,,,,,,,,,,,,,LONGI HIMO 7 LR8-66HGD-655M.pdf
+longi-lr7-72hvhf-640m,PANEL_SOLAR,LONGi,LR7-72HVHF-640M,640,53.7,15.13,44.36,14.43,-0.2,2382,1134,23.7,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-645m,PANEL_SOLAR,LONGi,LR7-72HVHF-645M,645,53.8,15.21,44.46,14.51,-0.2,2382,1134,23.9,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-650m,PANEL_SOLAR,LONGi,LR7-72HVHF-650M,650,53.9,15.29,44.56,14.59,-0.2,2382,1134,24.1,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-655m,PANEL_SOLAR,LONGi,LR7-72HVHF-655M,655,54,15.37,44.66,14.67,-0.2,2382,1134,24.2,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-660m,PANEL_SOLAR,LONGi,LR7-72HVHF-660M,660,54.1,15.45,44.76,14.75,-0.2,2382,1134,24.4,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-665m,PANEL_SOLAR,LONGi,LR7-72HVHF-665M,665,54.2,15.53,44.86,14.83,-0.2,2382,1134,24.6,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr7-72hvhf-670m,PANEL_SOLAR,LONGi,LR7-72HVHF-670M,670,54.3,15.61,44.96,14.91,-0.2,2382,1134,24.8,28.5,,,,,,,,,,,,,,,,,Longi Hi-MOX10 LR7-72HVHF 645M.pdf
+longi-lr8-66hgd-595m,PANEL_SOLAR,LONGi,LR8-66HGD-595M,595,47.78,15.8,39.91,14.91,-0.23,2382,1134,22,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-600m,PANEL_SOLAR,LONGi,LR8-66HGD-600M,600,47.98,15.85,40.11,14.96,-0.23,2382,1134,22.2,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-605m,PANEL_SOLAR,LONGi,LR8-66HGD-605M,605,48.18,15.9,40.31,15.01,-0.23,2382,1134,22.4,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-610m,PANEL_SOLAR,LONGi,LR8-66HGD-610M,610,48.38,15.95,40.51,15.06,-0.23,2382,1134,22.6,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-615m,PANEL_SOLAR,LONGi,LR8-66HGD-615M,615,48.58,16,40.71,15.11,-0.23,2382,1134,22.8,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-620m,PANEL_SOLAR,LONGi,LR8-66HGD-620M,620,48.78,16.05,40.91,15.16,-0.23,2382,1134,23,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-625m,PANEL_SOLAR,LONGi,LR8-66HGD-625M,625,48.98,16.1,41.11,15.21,-0.23,2382,1134,23.1,33.5,,,,,,,,,,,,,,,,,Longi Hi-MO 7 LR8-66HGD 610W.pdf
+longi-lr8-66hgd-630m,PANEL_SOLAR,LONGi,LR8-66HGD-630M,630,49.18,16.15,41.31,15.26,-0.23,2382,1134,23.3,32.3,,,,,,,,,,,,,,,,,LONGI Hi-MO 7 LR8-66HGD 635M.pdf
+longi-lr8-66hgd-635m,PANEL_SOLAR,LONGi,LR8-66HGD-635M,635,49.38,16.22,41.51,15.31,-0.23,2382,1134,23.5,32.3,,,,,,,,,,,,,,,,,LONGI Hi-MO 7 LR8-66HGD 635M.pdf
+longi-lr8-66hgd-640m,PANEL_SOLAR,LONGi,LR8-66HGD-640M,640,49.58,16.28,41.71,15.36,-0.23,2382,1134,23.7,32.3,,,,,,,,,,,,,,,,,LONGI Hi-MO 7 LR8-66HGD 635M.pdf
+longi-lr8-66hgd-645m,PANEL_SOLAR,LONGi,LR8-66HGD-645M,645,49.78,16.34,41.91,15.4,-0.23,2382,1134,23.9,32.3,,,,,,,,,,,,,,,,,LONGI Hi-MO 7 LR8-66HGD 635M.pdf
+longi-lr8-66hgd-650m,PANEL_SOLAR,LONGi,LR8-66HGD-650M,650,49.98,16.4,42.11,15.44,-0.23,2382,1134,24.1,32.3,,,,,,,,,,,,,,,,,LONGI Hi-MO 7 LR8-66HGD 635M.pdf
+growatt-mac-10ktl3-xl,INVERSOR,Growatt,MAC 10KTL3-XL,,,,,,,,,,,10,Trifasico 208V,4,200,800,,32,29.2,,,,,,,,,Fichatec-MAC10-20KTL3-XL.pdf
+growatt-mac-12ktl3-xl,INVERSOR,Growatt,MAC 12KTL3-XL,,,,,,,,,,,12,Trifasico 208V,4,200,800,,32,35,,,,,,,,,Fichatec-MAC10-20KTL3-XL.pdf
+growatt-mac-15ktl3-xl,INVERSOR,Growatt,MAC 15KTL3-XL,,,,,,,,,,,15,Trifasico 208V,3,200,1000,1100,55,39.4,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-20ktl3-xl,INVERSOR,Growatt,MAC 20KTL3-XL,,,,,,,,,,,20,Trifasico 208V,3,200,1000,1100,55,52.5,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-22ktl3-xl,INVERSOR,Growatt,MAC 22KTL3-XL,,,,,,,,,,,22,Trifasico 208V,3,200,1000,1100,55,57.7,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-25ktl3-xl,INVERSOR,Growatt,MAC 25KTL3-XL,,,,,,,,,,,25,Trifasico 208V,3,200,1000,1100,55,65.6,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-30ktl3-xl,INVERSOR,Growatt,MAC 30KTL3-XL,,,,,,,,,,,30,Trifasico 208V,3,200,1000,1100,55,78.8,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-36ktl3-xl,INVERSOR,Growatt,MAC 36KTL3-XL,,,,,,,,,,,36,Trifasico 208V,3,200,1000,1100,55,94.5,,,,,,,,,GRW-MAC-20KTL3-XL_FichaTecnica.pdf
+growatt-mac-50ktl3-x-mv,INVERSOR,Growatt,MAC 50KTL3-X MV,,,,,,,,,,,50,Trifasico,3,200,1000,,55,66.9,,,,,,,,,Growatt-MAC-60.pdf
+growatt-mac-60ktl3-x-mv,INVERSOR,Growatt,MAC 60KTL3-X MV,,,,,,,,,,,60,Trifasico,3,200,1000,,55,80.2,,,,,,,,,Growatt-MAC-60.pdf
+growatt-mac-70ktl3-x-mv,INVERSOR,Growatt,MAC 70KTL3-X MV,,,,,,,,,,,70,Trifasico,3,200,1000,,55,93.6,,,,,,,,,Growatt-MAC-60.pdf
+growatt-max-50ktl3-xl2,INVERSOR,Growatt,MAX 50KTL3-XL2,,,,,,,,,,,50,Trifasico 208V,8,180,800,,50,144.3,,,,,,,,,HOJA DE DATOS MAX 50-75KTL3-XL2.pdf
+growatt-max-60ktl3-xl2,INVERSOR,Growatt,MAX 60KTL3-XL2,,,,,,,,,,,60,Trifasico 208V,8,180,800,,50,173.2,,,,,,,,,HOJA DE DATOS MAX 50-75KTL3-XL2.pdf
+growatt-max-70ktl3-xl2,INVERSOR,Growatt,MAX 70KTL3-XL2,,,,,,,,,,,70,Trifasico 208V,8,180,800,,50,183.7,,,,,,,,,HOJA DE DATOS MAX 50-75KTL3-XL2.pdf
+growatt-max-75ktl3-xl2,INVERSOR,Growatt,MAX 75KTL3-XL2,,,,,,,,,,,75,Trifasico 208V,8,180,800,,50,196.9,,,,,,,,,HOJA DE DATOS MAX 50-75KTL3-XL2.pdf
+growatt-max-124ktl3-x-mv,INVERSOR,Growatt,MAX 124KTL3-X MV,,,,,,,,,,,124,Trifasico 480V,10,180,1000,1100,40,164.1,,,,,,,,,MAX_124~150KTL3-X_MV_MX_202408.pdf
+growatt-max-125ktl3-x-mv,INVERSOR,Growatt,MAX 125KTL3-X MV,,,,,,,,,,,125,Trifasico 480V,10,180,1000,1100,40,165.4,,,,,,,,,MAX_124~150KTL3-X_MV_MX_202408.pdf
+growatt-max-136ktl3-x-mv,INVERSOR,Growatt,MAX 136KTL3-X MV,,,,,,,,,,,136,Trifasico 480V,10,180,1000,1100,40,179.9,,,,,,,,,MAX_124~150KTL3-X_MV_MX_202408.pdf
+growatt-max-185ktl3-x-hv,INVERSOR,Growatt,MAX 185KTL3-X HV,,,,,,,,,,,185,Trifasico,9,500,1500,1500,50,133.5,,,,,,,,,MAX_185~253KTL3-X_HV_Datasheet_202305.pdf
+growatt-max-216ktl3-x-hv,INVERSOR,Growatt,MAX 216KTL3-X HV,,,,,,,,,,,216,Trifasico,9,500,1500,1500,50,155.9,,,,,,,,,MAX_185~253KTL3-X_HV_Datasheet_202305.pdf
+growatt-max-250ktl3-x-hv,INVERSOR,Growatt,MAX 250KTL3-X HV,,,,,,,,,,,250,Trifasico,12,500,1500,1500,50,180.4,,,,,,,,,MAX_185~253KTL3-X_HV_Datasheet_202305.pdf
+growatt-max-253ktl3-x-hv,INVERSOR,Growatt,MAX 253KTL3-X HV,,,,,,,,,,,253,Trifasico,15,500,1500,1500,50,182.6,,,,,,,,,MAX_185~253KTL3-X_HV_Datasheet_202305.pdf
+growatt-mid-6ktl3-xl2,INVERSOR,Growatt,MID 6KTL3-XL2,,,,,,,,,,,6,Trifasico,2,200,800,,40,17.5,,,,,,,,,MID_6~12KTL3-XL2_MX_202408.pdf
+growatt-mid-8ktl3-xl2,INVERSOR,Growatt,MID 8KTL3-XL2,,,,,,,,,,,8,Trifasico,2,200,800,,40,23.3,,,,,,,,,MID_6~12KTL3-XL2_MX_202408.pdf
+growatt-mid-10ktl3-xl2,INVERSOR,Growatt,MID 10KTL3-XL2,,,,,,,,,,,10,Trifasico,2,200,800,,40,29.2,,,,,,,,,MID_6~12KTL3-XL2_MX_202408.pdf
+growatt-mid-15ktl3-xl2,INVERSOR,Growatt,MID 15KTL3-XL2,,,,,,,,,,,15,Trifasico,4,200,800,,40,43.7,,,,,,,,,MID_15-25KTL3-XL2_Hoja_de_datos_MX_20241114.pdf
+growatt-mid-17ktl3-xl2,INVERSOR,Growatt,MID 17KTL3-XL2,,,,,,,,,,,17,Trifasico,4,200,800,,40,49.6,,,,,,,,,MID_15-25KTL3-XL2_Hoja_de_datos_MX_20241114.pdf
+growatt-mid-20ktl3-xl2,INVERSOR,Growatt,MID 20KTL3-XL2,,,,,,,,,,,20,Trifasico,4,200,800,,40,58.3,,,,,,,,,MID_15-25KTL3-XL2_Hoja_de_datos_MX_20241114.pdf
+growatt-mid11ktl3-xl2,INVERSOR,Growatt,MID11KTL3-XL2,,,,,,,,,,,11,Trifasico,2,200,800,,40,32.1,,,,,,,,,MID_6~12KTL3-XL2_MX_202408.pdf
+growatt-mid12ktl3-xl2,INVERSOR,Growatt,MID12KTL3-XL2,,,,,,,,,,,12,Trifasico,2,200,800,,40,35,,,,,,,,,MID_6~12KTL3-XL2_MX_202408.pdf
+growatt-mid22ktl3-xl2,INVERSOR,Growatt,MID22KTL3-XL2,,,,,,,,,,,22,Trifasico,4,200,800,,40,64.2,,,,,,,,,MID_15-25KTL3-XL2_Hoja_de_datos_MX_20241114.pdf
+growatt-mid25ktl3-xl2,INVERSOR,Growatt,MID25KTL3-XL2,,,,,,,,,,,25,Trifasico,4,200,800,,40,72.9,,,,,,,,,MID_15-25KTL3-XL2_Hoja_de_datos_MX_20241114.pdf
+growatt-min-2500tl-x2,INVERSOR,Growatt,MIN 2500TL-X2,,,,,,,,,,,2.5,Monofasico 120/240V,2,40,500,500,24,11.3,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-3000tl-x2,INVERSOR,Growatt,MIN 3000TL-X2,,,,,,,,,,,3,Monofasico 120/240V,2,40,500,500,24,13.6,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-3600tl-x2,INVERSOR,Growatt,MIN 3600TL-X2,,,,,,,,,,,3.6,Monofasico 120/240V,2,40,550,550,24,16,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-4200tl-x2,INVERSOR,Growatt,MIN 4200TL-X2,,,,,,,,,,,4.2,Monofasico 120/240V,2,40,550,550,24,19,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-4600tl-x2,INVERSOR,Growatt,MIN 4600TL-X2,,,,,,,,,,,4.6,Monofasico 120/240V,2,40,550,550,24,20.9,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-5000tl-x2,INVERSOR,Growatt,MIN 5000TL-X2,,,,,,,,,,,5,Monofasico 120/240V,2,40,550,550,24,22.7,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-6000tl-x2,INVERSOR,Growatt,MIN 6000TL-X2,,,,,,,,,,,6,Monofasico 120/240V,2,40,550,550,24,27.2,,,,,,,,,MIN_2500~6000TL-X2_MX_202408.pdf
+growatt-min-7000tl-x2,INVERSOR,Growatt,MIN 7000TL-X2,,,,,,,,,,,7,Monofasico 120/240V,3,60,550,600,24,33.5,,,,,,,,,MIN_7000-10000TL-X2_Hoja_de_datos_MX_20241114.pdf
+growatt-min-8000tl-x2,INVERSOR,Growatt,MIN 8000TL-X2,,,,,,,,,,,8,Monofasico 120/240V,3,60,550,600,24,38.3,,,,,,,,,MIN_7000-10000TL-X2_Hoja_de_datos_MX_20241114.pdf
+growatt-min-9000tl-x2,INVERSOR,Growatt,MIN 9000TL-X2,,,,,,,,,,,9,Monofasico 120/240V,3,60,550,600,24,43,,,,,,,,,MIN_7000-10000TL-X2_Hoja_de_datos_MX_20241114.pdf
+growatt-min-10000tl-x2,INVERSOR,Growatt,MIN 10000TL-X2,,,,,,,,,,,10,Monofasico 120/240V,3,60,550,600,24,45.5,,,,,,,,,MIN_7000-10000TL-X2_Hoja_de_datos_MX_20241114.pdf
+growatt-neo-1600m-x,INVERSOR,Growatt,NEO 1600M-X,,,,,,,,,,,1.6,Monofasico 120/240V,4,16,55,60,18.8,7.44,,,,,,,,,NEO_1600~2000M-X_Hoja_de_datos_MX.pdf
+growatt-neo-2000m-x,INVERSOR,Growatt,NEO 2000M-X,,,,,,,,,,,2,Monofasico 120/240V,4,16,55,60,18.8,9.3,,,,,,,,,NEO_1600~2000M-X_Hoja_de_datos_MX.pdf
+growatt-spe-6000-us,INVERSOR,Growatt,SPE 6000 US,,,,,,,,,,,6,Monofasico 120/240V,2,60,480,550,34,25,,,,,,,,,SPE_6000-12000US_Hoja_de_datos_MX_202501.pdf
+growatt-spe-8000-es,INVERSOR,Growatt,SPE 8000 ES,,,,,,,,,,,8,Monofasico 120/240V,2,60,480,550,,,,,,,,,,,Datasheet Inversor Growatt SPE 8000-12000 ES.pdf
+growatt-spe-8000-us,INVERSOR,Growatt,SPE 8000 US,,,,,,,,,,,8,Monofasico 120/240V,2,60,480,550,34,33.4,,,,,,,,,SPE_6000-12000US_Hoja_de_datos_MX_202501.pdf
+growatt-spe-10000-es,INVERSOR,Growatt,SPE 10000 ES,,,,,,,,,,,10,Monofasico 120/240V,2,60,480,550,,,,,,,,,,,Datasheet Inversor Growatt SPE 8000-12000 ES.pdf
+growatt-spe-10000-us,INVERSOR,Growatt,SPE 10000 US,,,,,,,,,,,10,Monofasico 120/240V,2,60,480,550,34,41.7,,,,,,,,,SPE_6000-12000US_Hoja_de_datos_MX_202501.pdf
+growatt-spe-12000-es,INVERSOR,Growatt,SPE 12000 ES,,,,,,,,,,,12,Monofasico 120/240V,2,60,480,550,,,,,,,,,,,Datasheet Inversor Growatt SPE 8000-12000 ES.pdf
+growatt-spe-12000-us,INVERSOR,Growatt,SPE 12000 US,,,,,,,,,,,12,Monofasico 120/240V,2,60,480,550,34,50,,,,,,,,,SPE_6000-12000US_Hoja_de_datos_MX_202501.pdf
+growatt-spf-3000tl-lvm-24p,INVERSOR,Growatt,SPF 3000TL LVM-24P,,,,,,,,,,,3,,,30,115,145,,,,,,,,,,,SPF_3000TL_LVM_Hoja_de_datos_MX.pdf
+growatt-spf-3000tl-lvm-48p,INVERSOR,Growatt,SPF 3000TL LVM-48P,,,,,,,,,,,3,,,60,115,145,,,,,,,,,,,SPF_3000TL_LVM_Hoja_de_datos_MX.pdf
+growatt-spf-4000t,INVERSOR,Growatt,SPF 4000T,,,,,,,,,,,4,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-4000t-dvm,INVERSOR,Growatt,SPF 4000T DVM,,,,,,,,,,,4,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-5000t,INVERSOR,Growatt,SPF 5000T,,,,,,,,,,,5,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-5000t-dvm,INVERSOR,Growatt,SPF 5000T DVM,,,,,,,,,,,5,Monofasico 120/240V,,60,145,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-6000t,INVERSOR,Growatt,SPF 6000T,,,,,,,,,,,6,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-6000t-dvm,INVERSOR,Growatt,SPF 6000T DVM,,,,,,,,,,,6,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-6000t-dvm-mpv,INVERSOR,Growatt,SPF 6000T DVM-MPV,,,,,,,,,,,6,Monofasico 120/240V,,60,245,250,,,,,,,,,,,SPF_6000-18000T_DVM_MPV_Hoja_de_datos_MX_2024.pdf
+growatt-spf-8000t,INVERSOR,Growatt,SPF 8000T,,,,,,,,,,,8,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-8000t-dvm,INVERSOR,Growatt,SPF 8000T DVM,,,,,,,,,,,8,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-10000t,INVERSOR,Growatt,SPF 10000T,,,,,,,,,,,10,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-10000t-dvm,INVERSOR,Growatt,SPF 10000T DVM,,,,,,,,,,,10,Monofasico 120/240V,,60,145,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-12000t,INVERSOR,Growatt,SPF 12000T,,,,,,,,,,,12,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
+growatt-spf-12000t-dvm,INVERSOR,Growatt,SPF 12000T DVM,,,,,,,,,,,12,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-12000t-dvm-mpv,INVERSOR,Growatt,SPF 12000T DVM-MPV,,,,,,,,,,,12,Monofasico 120/240V,,60,245,250,,,,,,,,,,,SPF_6000-18000T_DVM_MPV_Hoja_de_datos_MX_2024.pdf
+growatt-spf-18000t-dvm-mpv,INVERSOR,Growatt,SPF 18000T DVM-MPV,,,,,,,,,,,18,Monofasico 120/240V,,60,245,250,,,,,,,,,,,SPF_6000-18000T_DVM_MPV_Hoja_de_datos_MX_2024.pdf
+growatt-sph-10000tl-hu-us,INVERSOR,Growatt,SPH 10000TL-HU-US,,,,,,,,,,,10,Monofasico 120/240V,3,150,450,525,27,50,,,,,,,,,FICHA TECNICA SPH 10000TL-HU US.pdf
+growatt-wit-50k-hu,INVERSOR,Growatt,WIT 50K-HU,,,,,,,,,,,50,Trifasico 380/400V,7,180,800,1100,40,83.3,,,,,,,,,WIT_50-100K_HU_EU_Datasheet_EN_202306-1.pdf
+growatt-wit-63k-hu,INVERSOR,Growatt,WIT 63K-HU,,,,,,,,,,,63,Trifasico 380/400V,8,180,800,1100,40,105,,,,,,,,,WIT_50-100K_HU_EU_Datasheet_EN_202306-1.pdf
+growatt-wit-75k-hu,INVERSOR,Growatt,WIT 75K-HU,,,,,,,,,,,75,Trifasico 380/400V,10,180,800,1100,40,125,,,,,,,,,WIT_50-100K_HU_EU_Datasheet_EN_202306-1.pdf
+growatt-wit-100k-hu,INVERSOR,Growatt,WIT 100K-HU,,,,,,,,,,,100,Trifasico 380/400V,10,180,800,1100,40,166.7,,,,,,,,,WIT_50-100K_HU_EU_Datasheet_EN_202306-1.pdf
+hoymiles-has-3-0lv-eug1,INVERSOR,Hoymiles,HAS-3.0LV-EUG1,,,,,,,,,,,3,Monofasico 120/240V,,,,,,13,,,,,,,,,HAS-LV-EUG1-Series_Datasheet_EN_V1.4.pdf
+hoymiles-has-3-6lv-eug1,INVERSOR,Hoymiles,HAS-3.6LV-EUG1,,,,,,,,,,,3.68,Monofasico 120/240V,,,,,,16,,,,,,,,,HAS-LV-EUG1-Series_Datasheet_EN_V1.4.pdf
+hoymiles-has-3-8lv-usg1,INVERSOR,Hoymiles,HAS-3.8LV-USG1,,,,,,,,,,,3.84,Monofasico 120/240V,,,,,,16,,,,,,,,,HAS-31.pdf
+hoymiles-has-4-6lv-eug1,INVERSOR,Hoymiles,HAS-4.6LV-EUG1,,,,,,,,,,,4.6,Monofasico 120/240V,,,,,,20,,,,,,,,,HAS-LV-EUG1-Series_Datasheet_EN_V1.4.pdf
+hoymiles-has-4-8lv-usg1,INVERSOR,Hoymiles,HAS-4.8LV-USG1,,,,,,,,,,,4.8,Monofasico 120/240V,,,,,,20,,,,,,,,,HAS-31.pdf
+hoymiles-has-5-0lv-eug1,INVERSOR,Hoymiles,HAS-5.0LV-EUG1,,,,,,,,,,,5,Monofasico 120/240V,,,,,,21.7,,,,,,,,,HAS-LV-EUG1-Series_Datasheet_EN_V1.4.pdf
+hoymiles-has-6-0lv-usg1,INVERSOR,Hoymiles,HAS-6.0LV-USG1,,,,,,,,,,,6,Monofasico 120/240V,,,,,,25,,,,,,,,,HAS-31.pdf
+hoymiles-has-7-6lv-usg1,INVERSOR,Hoymiles,HAS-7.6LV-USG1,,,,,,,,,,,7.68,Monofasico 120/240V,,,,,,32,,,,,,,,,HAS-31.pdf
+hoymiles-has-9-6lv-usg1,INVERSOR,Hoymiles,HAS-9.6LV-USG1,,,,,,,,,,,9.6,Monofasico 120/240V,,,,,,40,,,,,,,,,HAS-31.pdf
+hoymiles-has-11-5lv-usg1,INVERSOR,Hoymiles,HAS-11.5LV-USG1,,,,,,,,,,,11.52,Monofasico 120/240V,,,,,,48,,,,,,,,,HAS-31.pdf
+hoymiles-hms-300-1t,INVERSOR,Hoymiles,HMS-300-1T,,,,,,,,,,,0.3,Monofasico 120/240V,1,16,60,60,20,1.3,,,,,,,,,DATA SHEET HMS-500-1T.pdf
+hoymiles-hms-350-1t,INVERSOR,Hoymiles,HMS-350-1T,,,,,,,,,,,0.35,Monofasico 120/240V,1,16,60,60,20,1.52,,,,,,,,,DATA SHEET HMS-500-1T.pdf
+hoymiles-hms-400-1t,INVERSOR,Hoymiles,HMS-400-1T,,,,,,,,,,,0.4,Monofasico 120/240V,1,16,60,65,25,1.74,,,,,,,,,DATA SHEET HMS-500-1T.pdf
+hoymiles-hms-450-1t,INVERSOR,Hoymiles,HMS-450-1T,,,,,,,,,,,0.45,Monofasico 120/240V,1,16,60,65,25,1.96,,,,,,,,,DATA SHEET HMS-500-1T.pdf
+hoymiles-hms-500-1t,INVERSOR,Hoymiles,HMS-500-1T,,,,,,,,,,,0.5,Monofasico 120/240V,1,16,60,65,25,2.17,,,,,,,,,DATA SHEET HMS-500-1T.pdf
+hoymiles-hms-600-2t,INVERSOR,Hoymiles,HMS-600-2T,,,,,,,,,,,0.6,,2,16,60,60,20,2.61,,,,,,,,,DATA SHEET HMS-1000-2T.pdf
+hoymiles-hms-700-2t,INVERSOR,Hoymiles,HMS-700-2T,,,,,,,,,,,0.7,,2,16,60,60,20,3.04,,,,,,,,,DATA SHEET HMS-1000-2T.pdf
+hoymiles-hms-800-2t,INVERSOR,Hoymiles,HMS-800-2T,,,,,,,,,,,0.8,Monofasico 120/240V,2,16,60,65,25,3.85,,,,,,,,,Datasheet_HMS-800&900&1000_Global_ES(MX)_V202302.pdf
+hoymiles-hms-800-2t-lv,INVERSOR,Hoymiles,HMS-800-2T-LV,,,,,,,,,,,0.8,Monofasico 120/240V,2,16,60,65,25,6.67,,,,,,,,,DATA SHEET HMS-800-2T-LV.pdf
+hoymiles-hms-900-2t,INVERSOR,Hoymiles,HMS-900-2T,,,,,,,,,,,0.9,Monofasico 120/240V,2,16,60,65,25,4.33,,,,,,,,,Datasheet_HMS-800&900&1000_Global_ES(MX)_V202302.pdf
+hoymiles-hms-1000-2t,INVERSOR,Hoymiles,HMS-1000-2T,,,,,,,,,,,1,Monofasico 120/240V,2,16,60,65,25,4.81,,,,,,,,,Datasheet_HMS-800&900&1000_Global_ES(MX)_V202302.pdf
+hoymiles-hms-1600-4t,INVERSOR,Hoymiles,HMS-1600-4T,,,,,,,,,,,1.6,Monofasico 120/240V,4,16,60,65,25,7.27,,,,,,,,,HMS-2000-4T.pdf
+hoymiles-hms-1600-4t-na,INVERSOR,Hoymiles,HMS-1600-4T-NA,,,,,,,,,,,1.44,,4,16,60,65,25,6,,,,,,,,,Datasheet_HMS-160018002000-4T_NA_EN_V202301.pdf
+hoymiles-hms-1800-4t,INVERSOR,Hoymiles,HMS-1800-4T,,,,,,,,,,,1.8,Monofasico 120/240V,4,16,60,65,25,8.18,,,,,,,,,HMS-2000-4T.pdf
+hoymiles-hms-1800-4t-na,INVERSOR,Hoymiles,HMS-1800-4T-NA,,,,,,,,,,,1.66,,4,16,60,65,25,6.92,,,,,,,,,Datasheet_HMS-160018002000-4T_NA_EN_V202301.pdf
+hoymiles-hms-2000-4t,INVERSOR,Hoymiles,HMS-2000-4T,,,,,,,,,,,2,Monofasico 120/240V,4,16,60,65,25,9.09,,,,,,,,,HMS-2000-4T.pdf
+hoymiles-hms-2000-4t-na,INVERSOR,Hoymiles,HMS-2000-4T-NA,,,,,,,,,,,1.918,,4,16,60,65,25,7.99,,,,,,,,,Datasheet_HMS-160018002000-4T_NA_EN_V202301.pdf
+hoymiles-hms-2250-6t,INVERSOR,Hoymiles,HMS-2250-6T,,,,,,,,,,,2.25,Trifasico 380/400V,3,16,60,65,15,3.26,,,,,,,,,HMT-6in1-18002250W_Global_ESEU_V202212.pdf
+hoymiles-hmt-1600-4t,INVERSOR,Hoymiles,HMT-1600-4T,,,,,,,,,,,1.6,Trifasico 380/400V,2,16,60,65,25,2.32,,,,,,,,,Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hmt-1600-4t-208,INVERSOR,Hoymiles,HMT-1600-4T-208,,,,,,,,,,,1.6,Trifasico 208V,2,16,60,65,25,4.21,,,,,,,,,TRIFASICO Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hmt-1800-4t,INVERSOR,Hoymiles,HMT-1800-4T,,,,,,,,,,,1.8,Trifasico 380/400V,2,16,60,65,25,2.61,,,,,,,,,Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hmt-1800-4t-208,INVERSOR,Hoymiles,HMT-1800-4T-208,,,,,,,,,,,1.8,Trifasico 208V,2,16,60,65,25,4.73,,,,,,,,,TRIFASICO Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hmt-1800-6t,INVERSOR,Hoymiles,HMT-1800-6T,,,,,,,,,,,1.8,Trifasico 380/400V,3,16,60,65,15,2.61,,,,,,,,,HMT-6in1-18002250W_Global_ESEU_V202212.pdf
+hoymiles-hmt-2000-4t,INVERSOR,Hoymiles,HMT-2000-4T,,,,,,,,,,,2,Trifasico 380/400V,2,16,60,65,25,2.9,,,,,,,,,Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hmt-2000-4t-208,INVERSOR,Hoymiles,HMT-2000-4T-208,,,,,,,,,,,2,Trifasico 208V,2,16,60,65,25,5.26,,,,,,,,,TRIFASICO Datasheet_HMT-160018002000-208_LA_ESMX_V202405.pdf
+hoymiles-hys-3-8lv-usg1,INVERSOR,Hoymiles,HYS-3.8LV-USG1,,,,,,,,,,,3.84,Monofasico 120/240V; Trifasico 208V,2,125,500,550,20,16,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+hoymiles-hys-4-8lv-usg1,INVERSOR,Hoymiles,HYS-4.8LV-USG1,,,,,,,,,,,4.8,Monofasico 120/240V; Trifasico 208V,2,125,500,550,20,20,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+hoymiles-hys-6-0lv-usg1,INVERSOR,Hoymiles,HYS-6.0LV-USG1,,,,,,,,,,,6,Monofasico 120/240V; Trifasico 208V,2,125,500,550,20,25,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+hoymiles-hys-7-6lv-usg1,INVERSOR,Hoymiles,HYS-7.6LV-USG1,,,,,,,,,,,7.68,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,32,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+hoymiles-hys-9-6lv-usg1,INVERSOR,Hoymiles,HYS-9.6LV-USG1,,,,,,,,,,,9.6,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,40,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+hoymiles-hys-11-5lv-usg1,INVERSOR,Hoymiles,HYS-11.5LV-USG1,,,,,,,,,,,11.52,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,48,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+sin-marca-max-100ktl3-x-lv,INVERSOR,Sin marca,MAX 100KTL3-X LV,,,,,,,,,,,100,Trifasico 380/400V,10,,,1100,40,158.8,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
+sin-marca-max-110ktl3-x-lv,INVERSOR,Sin marca,MAX 110KTL3-X LV,,,,,,,,,,,110,Trifasico 380/400V,10,,,1100,40,174.6,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
+sin-marca-max-120ktl3-x-lv,INVERSOR,Sin marca,MAX 120KTL3-X LV,,,,,,,,,,,120,Trifasico 380/400V,10,,,1100,40,190.5,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
+sin-marca-max-125ktl3-x-lv,INVERSOR,Sin marca,MAX 125KTL3-X LV,,,,,,,,,,,125,Trifasico 380/400V,10,,,1100,40,198.5,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
+solax-x1-micro-1875-g2,INVERSOR,SolaX,X1-Micro 1875 G2,,,,,,,,,,,1.875,Monofasico 120/240V,4,22,60,60,20,8.16,,,,,,,,,SolaX X1-Micro 4 in 1 G2 Datasheet-EN-V1.1 20250805(1).pdf
+solax-x1-micro-2000-g2,INVERSOR,SolaX,X1-Micro 2000 G2,,,,,,,,,,,2,Monofasico 120/240V,4,22,60,60,20,8.7,,,,,,,,,SolaX X1-Micro 4 in 1 G2 Datasheet-EN-V1.1 20250805(1).pdf
+solax-x1-micro-2250-g2,INVERSOR,SolaX,X1-Micro 2250 G2,,,,,,,,,,,2.25,Monofasico 120/240V,4,22,60,60,25,9.79,,,,,,,,,SolaX X1-Micro 4 in 1 G2 Datasheet-EN-V1.1 20250805(1).pdf
+solax-x1-micro-2400-g2,INVERSOR,SolaX,X1-Micro 2400 G2,,,,,,,,,,,2.4,Monofasico 120/240V,4,22,60,60,25,10.44,,,,,,,,,SolaX X1-Micro 4 in 1 G2 Datasheet-EN-V1.1 20250805(1).pdf
+solax-x1-micro-2500-g2,INVERSOR,SolaX,X1-Micro 2500 G2,,,,,,,,,,,2.5,Monofasico 120/240V,4,22,60,60,25,10.67,,,,,,,,,SolaX X1-Micro 4 in 1 G2 Datasheet-EN-V1.1 20250805(1).pdf
+solis-350k-m12,INVERSOR,Solis,350K-M12,,,,,,,,,,,350,Trifasico 800V; Trifasico 380/400V,12,480,1500,1500,60,252.6,,,,,,,,,"Solis_Technical_Brochure_ESP_V2,8_202412.pdf"
+solis-350k-m16,INVERSOR,Solis,350K-M16,,,,,,,,,,,350,Trifasico 800V; Trifasico 380/400V,16,480,1500,1500,60,252.6,,,,,,,,,"Solis_Technical_Brochure_ESP_V2,8_202412.pdf"
+solis-s5-gc15k-lv,INVERSOR,Solis,S5-GC15K-LV,,,,,,,,,,,15,Trifasico 208V,3,200,1000,1100,40,43.3,,,,,,,,,"S5-GC(15-23)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc20k-lv,INVERSOR,Solis,S5-GC20K-LV,,,,,,,,,,,20,Trifasico 208V,3,200,1000,1100,40,57.7,,,,,,,,,"S5-GC(15-23)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc23k-lv,INVERSOR,Solis,S5-GC23K-LV,,,,,,,,,,,23,Trifasico 208V,3,200,1000,1100,40,65,,,,,,,,,"S5-GC(15-23)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc25k-lv,INVERSOR,Solis,S5-GC25K-LV,,,,,,,,,,,25,Trifasico 208V,4,180,1000,1100,40,72.2,,,,,,,,,"S5-GC(25-36)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc30k-lv,INVERSOR,Solis,S5-GC30K-LV,,,,,,,,,,,30,Trifasico 208V,4,180,1000,1100,40,86.6,,,,,,,,,"S5-GC(25-36)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc36k-lv,INVERSOR,Solis,S5-GC36K-LV,,,,,,,,,,,36,Trifasico 208V,4,180,1000,1100,40,94.5,,,,,,,,,"S5-GC(25-36)K-Global-Flyer-V3,8.pdf"
+solis-s5-gc50k-lv,INVERSOR,Solis,S5-GC50K-LV,,,,,,,,,,,50,Trifasico 208V,6,180,1000,1100,40,144.3,,,,,,,,,"S5-GC(50-60)K-LV-Global-Flyer-V3,8.pdf"
+solis-s5-gc60k-lv,INVERSOR,Solis,S5-GC60K-LV,,,,,,,,,,,60,Trifasico 208V,8,180,1000,1100,40,173.2,,,,,,,,,"S5-GC(50-60)K-LV-Global-Flyer-V3,8.pdf"
+solis-s5-gc75k-us,INVERSOR,Solis,S5-GC75K-US,,,,,,,,,,,75,Trifasico 480V,8,180,1000,1000,50,90.2,,,,,,,,,Solis_datasheet_S5-GC(75-125)K-US.pdf
+solis-s5-gc80k-us,INVERSOR,Solis,S5-GC80K-US,,,,,,,,,,,80,Trifasico 480V,9,180,1000,1000,50,96.2,,,,,,,,,Solis_datasheet_S5-GC(75-125)K-US.pdf
+solis-s5-gc90k-us,INVERSOR,Solis,S5-GC90K-US,,,,,,,,,,,90,Trifasico 480V,,180,1000,1000,,108.3,,,,,,,,,Solis_datasheet_S5-GC(75-125)K-US.pdf
+solis-s5-gc100k,INVERSOR,Solis,S5-GC100K,,,,,,,,,,,100,Trifasico 380/400V,10,180,1000,1100,40,167.1,,,,,,,,,"Solis_datasheet_S5-GC(100-125)K_PHL_V1,2_202503.pdf"
+solis-s5-gc100k-us,INVERSOR,Solis,S5-GC100K-US,,,,,,,,,,,100,Trifasico 480V,10,180,1000,1000,50,120.3,,,,,,,,,Solis_datasheet_S5-GC(75-125)K-US.pdf
+solis-s5-gc110k,INVERSOR,Solis,S5-GC110K,,,,,,,,,,,110,,10,180,1000,1100,40,183.8,,,,,,,,,"Solis_datasheet_S5-GC(100-125)K_PHL_V1,2_202503.pdf"
+solis-s5-gc125k-hv,INVERSOR,Solis,S5-GC125K-HV,,,,,,,,,,,125,Trifasico 480V,10,180,1000,1100,40,165.4,,,,,,,,,"Solis_datasheet_S5-GC(100-125)K_PHL_V1,2_202503.pdf"
+solis-s5-gc125k-us,INVERSOR,Solis,S5-GC125K-US,,,,,,,,,,,125,Trifasico 480V,,180,1000,1000,,150.4,,,,,,,,,Solis_datasheet_S5-GC(75-125)K-US.pdf
+solis-s5-gr1p7k,INVERSOR,Solis,S5-GR1P7K,,,,,,,,,,,7,Monofasico 120/240V,3,100,500,600,22,33.7,,,,,,,,,"Solis_datasheet_S5-GR1P(7-10)K_PHL_V1,2_202503.pdf"
+solis-s5-gr1p8k,INVERSOR,Solis,S5-GR1P8K,,,,,,,,,,,8,Monofasico 120/240V,3,100,500,600,22,36.6,,,,,,,,,"Solis_datasheet_S5-GR1P(7-10)K_PHL_V1,2_202503.pdf"
+solis-s5-gr1p9k,INVERSOR,Solis,S5-GR1P9K,,,,,,,,,,,9,Monofasico 120/240V,3,100,500,600,22,41.3,,,,,,,,,"Solis_datasheet_S5-GR1P(7-10)K_PHL_V1,2_202503.pdf"
+solis-s5-gr1p10k,INVERSOR,Solis,S5-GR1P10K,,,,,,,,,,,10,Monofasico 120/240V,3,100,500,600,22,45.9,,,,,,,,,"Solis_datasheet_S5-GR1P(7-10)K_PHL_V1,2_202503.pdf"
+solis-s5-gr3p5k-lv,INVERSOR,Solis,S5-GR3P5K-LV,,,,,,,,,,,5,Trifasico 208V,2,160,500,1100,20,14.4,,,,,,,,,"S5-GR3P(5-10)K-Global-Flyer-V3,8.pdf"
+solis-s5-gr3p6k-lv,INVERSOR,Solis,S5-GR3P6K-LV,,,,,,,,,,,6,Trifasico 208V,,160,500,1100,,16.7,,,,,,,,,"S5-GR3P(5-10)K-Global-Flyer-V3,8.pdf"
+solis-s5-gr3p10k-lv,INVERSOR,Solis,S5-GR3P10K-LV,,,,,,,,,,,10,Trifasico 208V,2,160,500,1100,40,28.8,,,,,,,,,"S5-GR3P(5-10)K-Global-Flyer-V3,8.pdf"
+solis-s6-eh1p8k-l-plus,INVERSOR,Solis,S6-EH1P8K-L-PLUS,,,,,,,,,,,8,Monofasico 120/240V,2,90,435,500,40,36.4,,,,,,,,,"Solis_Technical_Brochure_ESP_V2,8_202412.pdf"
+solis-s6-eh2p5k02-sv-yd-l,INVERSOR,Solis,S6-EH2P5K02-SV-YD-L,,,,,,,,,,,5,Monofasico 120/240V,2,90,435,500,24,22.9,,,,,,,,,"S6-EH2P(5-8)K-Global-Flyer-V3,8.pdf"
+solis-s6-eh2p6k02-sv-yd-l,INVERSOR,Solis,S6-EH2P6K02-SV-YD-L,,,,,,,,,,,6,Monofasico 120/240V,2,90,435,500,24,27.5,,,,,,,,,"S6-EH2P(5-8)K-Global-Flyer-V3,8.pdf"
+solis-s6-eh2p7-5k02-sv-yd-l,INVERSOR,Solis,S6-EH2P7.5K02-SV-YD-L,,,,,,,,,,,7.5,Monofasico 120/240V,2,90,435,500,48,31.3,,,,,,,,,"S6-EH2P(5-8)K-Global-Flyer-V3,8.pdf"
+solis-s6-eh2p8k02-sv-yd-l,INVERSOR,Solis,S6-EH2P8K02-SV-YD-L,,,,,,,,,,,8,Monofasico 120/240V,,90,435,500,,36.7,,,,,,,,,"S6-EH2P(5-8)K-Global-Flyer-V3,8.pdf"
+solis-s6-eh2p10k03-sv-yd-l-us,INVERSOR,Solis,S6-EH2P10K03-SV-YD-L-US,,,,,,,,,,,10,Monofasico 120/240V,,100,450,550,50,45.5,,,,,,,,,"S6-EH2P(10-16)K-MX-Flyer-V1,8.pdf"
+solis-s6-eh2p12k03-sv-yd-l-us,INVERSOR,Solis,S6-EH2P12K03-SV-YD-L-US,,,,,,,,,,,12,Monofasico 120/240V,,100,450,550,50,54.5,,,,,,,,,"S6-EH2P(10-16)K-MX-Flyer-V1,8.pdf"
+solis-s6-eh2p14k03-sv-yd-l-us,INVERSOR,Solis,S6-EH2P14K03-SV-YD-L-US,,,,,,,,,,,14,Monofasico 120/240V,,100,450,550,50,63.6,,,,,,,,,"S6-EH2P(10-16)K-MX-Flyer-V1,8.pdf"
+solis-s6-eh2p16k03-sv-yd-l-us,INVERSOR,Solis,S6-EH2P16K03-SV-YD-L-US,,,,,,,,,,,16,Monofasico 120/240V,,100,450,550,50,72.7,,,,,,,,,"S6-EH2P(10-16)K-MX-Flyer-V1,8.pdf"
+solis-s6-eh3p8k-lv-nd-h,INVERSOR,Solis,S6-EH3P8K-LV-ND-H,,,,,,,,,,,8,Trifasico 208V,4,200,850,1000,,20.1,,,,,,,,,"Solis_Inverter_S6-EH3P(8-12)K-LV-ND-H_Datasheet_GLOBAL_V2,8_202507.pdf"
+solis-s6-eh3p10k-lv-nd-h,INVERSOR,Solis,S6-EH3P10K-LV-ND-H,,,,,,,,,,,10,Trifasico 208V,4,200,850,1000,24,25.1,,,,,,,,,"Solis_Inverter_S6-EH3P(8-12)K-LV-ND-H_Datasheet_GLOBAL_V2,8_202507.pdf"
+solis-s6-eh3p12k-lv-nd-h,INVERSOR,Solis,S6-EH3P12K-LV-ND-H,,,,,,,,,,,12,Trifasico 208V,4,200,850,1000,30,30.1,,,,,,,,,"Solis_Inverter_S6-EH3P(8-12)K-LV-ND-H_Datasheet_GLOBAL_V2,8_202507.pdf"
+solis-s6-eh3p30k-h-lv,INVERSOR,Solis,S6-EH3P30K-H-LV,,,,,,,,,,,30,Trifasico 208V,3,150,850,1000,60,78.7,,,,,,,,,"Solis_datasheet_S6-EH3P30K-H-LV_PHL_V1,2_202503.pdf"
+solis-s6-eh3p100k10-nv-yd-h-us,INVERSOR,Solis,S6-EH3P100K10-NV-YD-H-US,,,,,,,,,,,100,Trifasico 480V,10,150,950,1000,65,120.3,,,,,,,,,Inversor Hibrido Solis S6-EH3P_100-150_K10-US.pdf
+solis-s6-eh3p125k10-nv-yd-h-us,INVERSOR,Solis,S6-EH3P125K10-NV-YD-H-US,,,,,,,,,,,125,Trifasico 480V,10,150,950,1000,65,150.4,,,,,,,,,Inversor Hibrido Solis S6-EH3P_100-150_K10-US.pdf
+solis-s6-eh3p150k10-nv-yd-h-us,INVERSOR,Solis,S6-EH3P150K10-NV-YD-H-US,,,,,,,,,,,150,Trifasico 480V,10,150,950,1000,65,180.4,,,,,,,,,Inversor Hibrido Solis S6-EH3P_100-150_K10-US.pdf
+solis-s6-gc80k,INVERSOR,Solis,S6-GC80K,,,,,,,,,,,80,Trifasico 380/400V,8,160,1000,1100,50,133.7,,,,,,,,,"S6-GC(80-125)K-ES-Flyer-V2,0 (2)PC.pdf"
+solis-s6-gc100k,INVERSOR,Solis,S6-GC100K,,,,,,,,,,,100,Trifasico 380/400V,,160,1000,1100,,167.1,,,,,,,,,"S6-GC(80-125)K-ES-Flyer-V2,0 (2)PC.pdf"
+solis-s6-gc110k,INVERSOR,Solis,S6-GC110K,,,,,,,,,,,110,Trifasico 380/400V,10,160,1000,1100,50,183.8,,,,,,,,,"S6-GC(80-125)K-ES-Flyer-V2,0 (2)PC.pdf"
+solis-s6-gc125k,INVERSOR,Solis,S6-GC125K,,,,,,,,,,,125,Trifasico 380/400V,,160,1000,1100,,189.9,,,,,,,,,"S6-GC(80-125)K-ES-Flyer-V2,0 (2)PC.pdf"
+solis-s6-gr1p2-5k-s,INVERSOR,Solis,S6-GR1P2.5K-S,,,,,,,,,,,2.5,Monofasico 120/240V,2,50,550,550,22,11.4,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p3-6k-s,INVERSOR,Solis,S6-GR1P3.6K-S,,,,,,,,,,,3.6,Monofasico 120/240V,2,,,550,22,16,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p3k-s,INVERSOR,Solis,S6-GR1P3K-S,,,,,,,,,,,3,Monofasico 120/240V,2,,,550,22,13.6,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p4-6k-s,INVERSOR,Solis,S6-GR1P4.6K-S,,,,,,,,,,,4.6,Monofasico 120/240V,2,90,550,550,22,20.9,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p4k-s,INVERSOR,Solis,S6-GR1P4K-S,,,,,,,,,,,4,Monofasico 120/240V,2,,,550,22,18.2,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p5k-s,INVERSOR,Solis,S6-GR1P5K-S,,,,,,,,,,,5,Monofasico 120/240V,2,,,550,22,22.7,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-s6-gr1p6k-s,INVERSOR,Solis,S6-GR1P6K-S,,,,,,,,,,,6,Monofasico 120/240V,2,,,550,22,27.3,,,,,,,,,"S6-GR1P(2,5-6)K-ND-Global-Flyer-V3,8.pdf"
+solis-solis-80k-5g-pro,INVERSOR,Solis,Solis-80K-5G-PRO,,,,,,,,,,,80,Trifasico 380/400V,6,160,1000,1100,50,133.7,,,,,,,,,"Solis_Technical_Brochure_ESP_V2,8_202412.pdf"
+growatt-axe-5-0l,BATERIA,Growatt,AXE 5.0L,,,,,,,,,,,,,,,,,,,5,51.2,LiFePO4,DC,3.07,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-10-0l,BATERIA,Growatt,AXE 10.0L,,,,,,,,,,,,,,,,,,,10,51.2,LiFePO4,DC,6.14,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-15-0l,BATERIA,Growatt,AXE 15.0L,,,,,,,,,,,,,,,,,,,15,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-20-0l,BATERIA,Growatt,AXE 20.0L,,,,,,,,,,,,,,,,,,,20,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-25-0l,BATERIA,Growatt,AXE 25.0L,,,,,,,,,,,,,,,,,,,25,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-30-0l,BATERIA,Growatt,AXE 30.0L,,,,,,,,,,,,,,,,,,,30,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-35-0l,BATERIA,Growatt,AXE 35.0L,,,,,,,,,,,,,,,,,,,35,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-40-0l,BATERIA,Growatt,AXE 40.0L,,,,,,,,,,,,,,,,,,,40,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-45-0l,BATERIA,Growatt,AXE 45.0L,,,,,,,,,,,,,,,,,,,45,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-axe-50-0l,BATERIA,Growatt,AXE 50.0L,,,,,,,,,,,,,,,,,,,50,51.2,LiFePO4,DC,8.19,,,,AXE_5.0L_Hoja_de_datos_MX_202503.pdf
+growatt-hope-4-8l-c1,BATERIA,Growatt,Hope 4.8L-C1,,,,,,,,,,,,,,,,,,,4.8,48,LiFePO4,DC,4.5,,,,Growatt-Hope-4.8L-C1-datasheet-.pdf
+growatt-hope-5-0l-b1,BATERIA,Growatt,Hope 5.0L-B1,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,5.12,,,,Hope 5.0L-B1 datasheet-2404.pdf
+growatt-hope-5-0l-p1,BATERIA,Growatt,Hope 5.0L-P1,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,5.12,,,,Hope_5.0L-P1_Datasheet_202412.pdf
+growatt-hope-14-3l-a1,BATERIA,Growatt,HOPE 14.3L-A1,,,,,,,,,,,,,,,,,,,14.3,51.2,LiFePO4,DC,7.17,,,,Hope_14.3L-A1_Hoja_de_datos_MX_202410.pdf
+hoymiles-lb-5d-g2,BATERIA,Hoymiles,LB-5D-G2,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,2.56,,,,LITHIUM BATTERY LB-5D-G2.pdf
+hoymiles-lb-10d-usg2,BATERIA,Hoymiles,LB-10D-USG2,,,,,,,,,,,,,,,,,,,10.24,51.2,LiFePO4,DC,7.68,,,,BATERIA 51.2 10.24KW HOYMILES.pdf
+solis-pack-1p20s-314-01,BATERIA,Solis,PACK-1P20S-314-01,,,,,,,,,,,,,,,,,,,20.1,64,LiFePO4,DC,,,,,SolisStorage EverCore-261kWh-125kW-NV Installation Manual_V1.0.pdf

@@ -7,3 +7,6 @@ dist-ssr
 !.vscode/extensions.json
 .DS_Store
 desktop.ini
+
+# Fichas técnicas originales (PDF pesados): solo se versiona el catálogo extraído en src/data/
+fichas_tecnicas/
