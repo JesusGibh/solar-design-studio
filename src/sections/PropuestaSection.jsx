@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, Download, FilePlus2, FileText, LoaderCircle, TrendingUp, Wallet } from 'lucide-react'
+import { BarChart3, Download, FilePlus2, FileText, LoaderCircle, Presentation, TrendingUp, Wallet } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
+import VistaPreviaPropuesta from '../components/VistaPreviaPropuesta.jsx'
 import { NumberField, Stat, fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
@@ -48,6 +49,7 @@ export default function PropuestaSection() {
   const { sistema, resumen, red, techo, baterias, parametros, proyecto, actualizar } = useDimensionamiento()
   const { finanzas, propuesta } = proyecto
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
+  const [vistaPrevia, setVistaPrevia] = useState(false)
   const evaluacion = sistema?.evaluacion
   const cambiar = (cambios) => actualizar('finanzas', cambios)
   const cambiarPropuesta = (cambios) => actualizar('propuesta', cambios)
@@ -87,19 +89,25 @@ export default function PropuestaSection() {
     !precioWp && 'ingresa el precio por Watt instalado',
   ].filter(Boolean)
 
-  // Compone la imagen satelital, arma el PDF de 3 hojas y lo descarga. Las librerías se cargan aquí.
-  const descargarPdf = async () => {
-    setDescarga({ estado: 'generando' })
-    try {
-      const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }] = await Promise.all([
-        import('jspdf'),
-        import('../lib/propuestaPdf.js'),
-        import('../lib/mapaEstatico.js'),
-      ])
-      const imagenTecho = techo
-        ? await capturarTecho({ vertices: proyecto.techo.vertices, rectangulos: techo.rectangulos, usados: sistema.numPaneles })
-        : null
-      const doc = construirPropuestaPdf(jsPDF, {
+  // Compone la imagen satelital y arma el PDF de 3 hojas. Lo usan la vista previa y la descarga, así
+  // que ambas muestran exactamente el mismo documento. Las librerías se cargan aquí, bajo demanda.
+  const generarDocumento = async () => {
+    const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }] = await Promise.all([
+      import('jspdf'),
+      import('../lib/propuestaPdf.js'),
+      import('../lib/mapaEstatico.js'),
+    ])
+    const imagenTecho = techo
+      ? await capturarTecho({
+          vertices: proyecto.techo.vertices,
+          rectangulos: techo.rectangulos,
+          usados: sistema.numPaneles,
+          capa: proyecto.techo.capa,
+        })
+      : null
+    return {
+      sinImagen: Boolean(techo) && !imagenTecho,
+      doc: construirPropuestaPdf(jsPDF, {
         propuesta: { ...propuesta, fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) },
         imagenTecho,
         sistema,
@@ -111,9 +119,17 @@ export default function PropuestaSection() {
         consumo: resumen,
         precioWp,
         supuestos: `Supuestos: HSP ${parametros.hsp} h/día, PR ${parametros.pr}, degradación ${degradacion} %/año, inflación energética ${inflacion} %/año, factor de emisión ${factorCo2} kg CO2/kWh. El ahorro supone que toda la energía generada se aprovecha o se acredita a la misma tarifa.`,
-      })
-      doc.save(`${propuesta.id}.pdf`)
-      setDescarga({ estado: 'lista', sinImagen: Boolean(techo) && !imagenTecho })
+      }),
+    }
+  }
+
+  const archivo = `${propuesta.id}.pdf`
+  const descargarPdf = async () => {
+    setDescarga({ estado: 'generando' })
+    try {
+      const { doc, sinImagen } = await generarDocumento()
+      doc.save(archivo)
+      setDescarga({ estado: 'lista', sinImagen })
     } catch (error) {
       setDescarga({ estado: 'error', mensaje: error.message })
     }
@@ -123,6 +139,7 @@ export default function PropuestaSection() {
 
   return (
     <div className="grid gap-4">
+      {vistaPrevia && <VistaPreviaPropuesta generar={generarDocumento} nombre={archivo} onClose={() => setVistaPrevia(false)} />}
       <Panel title="Datos de la propuesta" icon={FileText}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -140,6 +157,15 @@ export default function PropuestaSection() {
             </button>
             <button
               type="button"
+              onClick={() => setVistaPrevia(true)}
+              disabled={!puedeDescargar}
+              className="flex items-center gap-2 rounded border border-accent/60 px-3 py-1.5 text-sm font-medium text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+            >
+              <Presentation className="size-4" aria-hidden="true" />
+              Vista Previa / Modo Presentación
+            </button>
+            <button
+              type="button"
               onClick={descargarPdf}
               disabled={!puedeDescargar || descarga.estado === 'generando'}
               className="flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
@@ -149,7 +175,7 @@ export default function PropuestaSection() {
               ) : (
                 <Download className="size-4" aria-hidden="true" />
               )}
-              {descarga.estado === 'generando' ? 'Generando PDF…' : 'Descargar Propuesta PDF'}
+              {descarga.estado === 'generando' ? 'Generando PDF…' : 'Descargar PDF Oficial'}
             </button>
           </div>
         </div>

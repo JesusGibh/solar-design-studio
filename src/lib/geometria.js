@@ -146,5 +146,35 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
   return { ...base, cantidad: rectangulos.length, rectangulos }
 }
 
-const CARDINALES = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
+// Distancia en metros entre dos puntos [lat, lng] cercanos.
+export function distancia(a, b) {
+  const { aPlano } = proyeccionLocal([a, b])
+  const [p, q] = [aPlano(a), aPlano(b)]
+  return Math.hypot(q.x - p.x, q.y - p.y)
+}
+
+// Cotas del trazo: longitud y punto medio de cada lado, perímetro y área.
+// Con `cerrado` en false (trazo en curso) no se cuenta el lado que une el último vértice con el primero.
+export function medirTrazo(vertices, cerrado = true) {
+  if (vertices.length < 2) return { lados: [], perimetro: 0, areaM2: 0 }
+  const { aPlano } = proyeccionLocal(vertices)
+  const puntos = vertices.map(aPlano)
+  const lados = []
+  const total = cerrado && vertices.length >= 3 ? vertices.length : vertices.length - 1
+  for (let i = 0; i < total; i++) {
+    const j = (i + 1) % vertices.length
+    lados.push({
+      indice: i,
+      longitud: Math.hypot(puntos[j].x - puntos[i].x, puntos[j].y - puntos[i].y),
+      medio: [(vertices[i][0] + vertices[j][0]) / 2, (vertices[i][1] + vertices[j][1]) / 2],
+    })
+  }
+  return {
+    lados,
+    perimetro: lados.reduce((suma, lado) => suma + lado.longitud, 0),
+    areaM2: vertices.length >= 3 ? areaPoligono(puntos) : 0,
+  }
+}
+
+const CARDINALES =['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
 export const puntoCardinal = (azimut) => CARDINALES[Math.round(azimut / 45) % 8]

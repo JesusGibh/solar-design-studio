@@ -205,7 +205,7 @@ export default function Dimensionador() {
               onClick={ajustarAlTecho}
               className="mt-2 rounded border border-danger/50 px-2.5 py-1 font-medium text-ink transition-colors hover:bg-danger/20"
             >
-              Ajustar al máximo del techo ({maximoTecho} paneles)
+              Ajustar diseño a capacidad física del techo ({maximoTecho} paneles)
             </button>
           </div>
         )}

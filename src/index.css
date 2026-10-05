@@ -60,9 +60,37 @@
   font-family: inherit;
 }
 
-.leaflet-container.cursor-crosshair,
-.leaflet-container.cursor-crosshair .leaflet-interactive {
+.leaflet-container.mapa-dibujando,
+.leaflet-container.mapa-dibujando .leaflet-interactive {
   cursor: crosshair;
+}
+
+/* Primer vértice mientras se dibuja: más grande, invita a cerrar el polígono */
+.vertice-techo.vertice-inicial {
+  background: var(--color-ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ok) 45%, transparent);
+  cursor: pointer;
+}
+
+/* Cota de cada lado, centrada sobre su punto medio */
+.cota-techo {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  border-radius: 3px;
+  border: 1px solid var(--color-line-strong);
+  background: color-mix(in srgb, var(--color-base) 88%, transparent);
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-ink);
+}
+
+.cota-techo.cota-insertable:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  cursor: copy;
 }
 
 /* Retícula tipo plano técnico para el fondo del área de trabajo */

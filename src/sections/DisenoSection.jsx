@@ -35,19 +35,41 @@ export default function DisenoSection() {
               usados={usados}
               vista={datos.vista}
               onVista={(vista) => cambiar({ vista })}
+              capa={datos.capa}
+              onCapa={(capa) => cambiar({ capa })}
             />
           </Suspense>
           {trazado && techo?.cantidad != null && (
-            <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm" style={{ background: 'var(--color-serie-1)' }} aria-hidden="true" />
-                Paneles del sistema ({usados})
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm border border-ink-muted bg-ink/10" aria-hidden="true" />
-                Espacio libre para más paneles ({techo.cantidad - usados})
-              </span>
-            </p>
+            <>
+              <p className="mt-3 rounded border border-line bg-base px-3 py-2 font-mono text-sm text-ink">
+                Caben <span className="text-accent">{techo.cantidad} paneles</span> en este techo | Capacidad:{' '}
+                <span className="text-accent">{fmt((techo.cantidad * panel.potencia_wp) / 1000, 2)} kWp</span>
+              </p>
+              <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-muted">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-sm border border-[#d5dbe3] bg-[#0b1a36]" aria-hidden="true" />
+                  Paneles del sistema ({usados})
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-sm border border-dashed border-ink-muted bg-ink/10" aria-hidden="true" />
+                  Espacio libre para más paneles ({techo.cantidad - usados})
+                </span>
+              </p>
+            </>
+          )}
+          {excesoTecho > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+              <p>
+                El sistema requiere {maximoTecho + excesoTecho} paneles y solo caben {maximoTecho}.
+              </p>
+              <button
+                type="button"
+                onClick={ajustarAlTecho}
+                className="rounded border border-danger/50 px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-danger/20"
+              >
+                Ajustar diseño a capacidad física del techo
+              </button>
+            </div>
           )}
         </Panel>
 
@@ -63,20 +85,40 @@ export default function DisenoSection() {
             />
           </div>
 
-          {excesoTecho > 0 && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
-              <p>
-                El sistema necesita {maximoTecho + excesoTecho} paneles y en el techo caben {maximoTecho}.
-              </p>
+          <div className="mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="azimut-arreglo" className={`${labelClass} mb-0`}>
+                Azimut del arreglo · {techo ? `${fmt(techo.azimut, 0)}° ${puntoCardinal(techo.azimut)}` : '—'}
+                {datos.azimut === '' && techo ? ' (automático)' : ''}
+              </label>
               <button
                 type="button"
-                onClick={ajustarAlTecho}
-                className="rounded border border-danger/50 px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-danger/20"
+                onClick={() => cambiar({ azimut: '' })}
+                disabled={datos.azimut === ''}
+                className="rounded border border-line px-2.5 py-1 text-xs text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50"
               >
-                Ajustar al máximo del techo
+                Alinear con el borde más largo
               </button>
             </div>
-          )}
+            <input
+              id="azimut-arreglo"
+              type="range"
+              min="0"
+              max="359"
+              step="1"
+              value={techo ? Math.round(techo.azimut) % 360 : 180}
+              disabled={!techo}
+              onChange={(event) => cambiar({ azimut: event.target.value })}
+              className="mt-2 w-full accent-accent"
+            />
+            <div className="flex justify-between font-mono text-[10px] text-ink-dim">
+              <span>N 0°</span>
+              <span>E 90°</span>
+              <span>S 180°</span>
+              <span>O 270°</span>
+              <span>359°</span>
+            </div>
+          </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <fieldset>
@@ -98,14 +140,6 @@ export default function DisenoSection() {
               placeholder="10"
               hint="Acorta en planta el lado del panel que sube por la pendiente."
               onChange={(inclinacion) => cambiar({ inclinacion })}
-            />
-            <NumberField
-              label="Azimut"
-              unit="°"
-              value={datos.azimut}
-              placeholder={techo ? fmt(techo.azimut, 0) : 'Auto'}
-              hint="Vacío: estimado como la perpendicular al lado más largo que mira al ecuador."
-              onChange={(azimut) => cambiar({ azimut })}
             />
           </div>
 
