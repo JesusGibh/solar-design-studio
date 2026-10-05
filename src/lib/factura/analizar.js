@@ -21,7 +21,6 @@ export function leerNumero(crudo) {
 
 const NUM = '(\\d[\\d.,]*)'
 const MONEDA = '(?:rd\\$|us\\$|usd|u\\$s|\\$|b\\/\\.?|bs\\.?|mxn|cop|q|l\\.?|s\\/\\.?)?'
-const MESES_ABREV = ['ene|jan', 'feb', 'mar', 'abr|apr', 'may', 'jun', 'jul', 'ago|aug', 'sep|set', 'oct', 'nov', 'dic|dec']
 
 const sinAcentos = (texto) => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -33,15 +32,78 @@ function primero(texto, patrones, valido) {
   return null
 }
 
-// Historial: renglones "Mes [año] … número". Se acepta con al menos 6 meses distintos.
+// Nombres de mes aceptados (sin acentos, en minúsculas). Solo palabras completas: "mar" suelto es
+// marzo, pero "marca" o "mayor" no deben contar como un mes.
+const NOMBRES_MES = [
+  ['enero', 'ene', 'january', 'jan'],
+  ['febrero', 'feb', 'february'],
+  ['marzo', 'mar', 'march'],
+  ['abril', 'abr', 'april', 'apr'],
+  ['mayo', 'may'],
+  ['junio', 'jun', 'june'],
+  ['julio', 'jul', 'july'],
+  ['agosto', 'ago', 'august', 'aug'],
+  ['septiembre', 'setiembre', 'sept', 'sep', 'set', 'september'],
+  ['octubre', 'oct', 'october'],
+  ['noviembre', 'nov', 'november'],
+  ['diciembre', 'dic', 'december', 'dec'],
+]
+const PALABRA_MES = new RegExp(`\\b(${NOMBRES_MES.flat().sort((a, b) => b.length - a.length).join('|')})\\b\\.?`, 'g')
+const indiceDeMes = (palabra) => NOMBRES_MES.findIndex((formas) => formas.includes(palabra))
+
+// Historial de consumo de la factura: kWh por mes del calendario (o null en los que no aparecen).
+// Reconoce tres maquetaciones y se acepta con al menos 3 meses distintos:
+//   1. Tabla horizontal:  "Abril 2026  Mayo 2026  Junio 2026" y debajo "Consumo (kWh)  1.040  1.480  1.920"
+//   2. Un renglón por mes: "Mayo 2026   1.480 kWh"
+//   3. Mes en número:      "05/2026   1.480"
 function historial(texto) {
+  const lineas = texto.split('\n')
   const meses = Array(12).fill(null)
-  MESES_ABREV.forEach((abreviatura, indice) => {
-    const patron = new RegExp(`\\b(?:${abreviatura})[a-z]*\\.?[\\s\\-/.,]*(?:(?:20)?\\d{2}\\b(?![.,]\\d))?[^\\d\\n]{0,15}${NUM}`)
-    const valor = leerNumero(texto.match(patron)?.[1] ?? '')
-    if (valor != null && valor >= 10 && valor <= 2_000_000) meses[indice] = valor
+  const esConsumo = (valor) => valor != null && valor >= 10 && valor <= 2_000_000
+  const poner = (indice, valor) => {
+    if (indice >= 0 && esConsumo(valor) && meses[indice] == null) meses[indice] = valor
+  }
+  const hallados = () => meses.filter((valor) => valor != null).length
+  const mesesDe = (linea) => [...linea.matchAll(PALABRA_MES)].map((hallado) => indiceDeMes(hallado[1]))
+  const numerosDe = (linea) => (linea.match(/\d[\d.,]*/g) ?? []).map(leerNumero)
+
+  // 1. Tabla horizontal: un renglón con varios meses y, poco después, uno con la misma cantidad de valores.
+  lineas.forEach((linea, n) => {
+    const encabezado = mesesDe(linea)
+    if (encabezado.length < 3) return
+    for (const candidata of lineas.slice(n + 1, n + 5)) {
+      if (mesesDe(candidata).length) break
+      const valores = numerosDe(candidata)
+      if (valores.length === encabezado.length && valores.every(esConsumo)) {
+        encabezado.forEach((indice, k) => poner(indice, valores[k]))
+        break
+      }
+    }
   })
-  return meses.filter((valor) => valor != null).length >= 6 ? meses : null
+
+  // 2. Un renglón por mes: se prefiere el número que va con "kWh"; si no, el primero tras el mes y su año.
+  if (hallados() < 3) {
+    for (const linea of lineas) {
+      const enLinea = mesesDe(linea)
+      if (enLinea.length !== 1) continue
+      const conUnidad = linea.match(/(\d[\d.,]*)\s*kwh/)
+      const trasMes = linea.slice(linea.search(PALABRA_MES)).replace(PALABRA_MES, '').replace(/^[\s\-/.,de]*(?:20\d{2}|\d{2})\b(?![.,]\d)/, '')
+      PALABRA_MES.lastIndex = 0
+      poner(enLinea[0], leerNumero(conUnidad?.[1] ?? trasMes.match(/\d[\d.,]*/)?.[0] ?? ''))
+    }
+  }
+
+  // 3. Mes en número: "05/2026 1.480" o "2026-05 1.480".
+  if (hallados() < 3) {
+    for (const linea of lineas) {
+      const fecha = linea.match(/\b(0?[1-9]|1[0-2])[/-](20\d{2})\b(?![/-]\d)/) ?? linea.match(/\b(20\d{2})[/-](0?[1-9]|1[0-2])\b(?![/-]\d)/)
+      if (!fecha) continue
+      const mes = Number(fecha[1].length === 4 ? fecha[2] : fecha[1])
+      const resto = linea.slice(fecha.index + fecha[0].length)
+      poner(mes - 1, leerNumero(resto.match(/(\d[\d.,]*)\s*kwh/)?.[1] ?? resto.match(/\d[\d.,]*/)?.[0] ?? ''))
+    }
+  }
+  return hallados() >= 3 ? meses : null
 }
 
 function tension(texto) {
@@ -120,7 +182,10 @@ export function analizarFactura(textoOriginal) {
     tarifaCalculada: tarifaLeida == null && tarifaCalculada != null,
     tension: red,
     trifasicoSinVoltaje: !red && /trifasic|three.?phase/.test(texto),
-    cliente: campo(textoOriginal, 'nombre del cliente|nombre del titular|titular del (?:contrato|servicio|suministro)|razon social|cliente|titular|nombre|senor(?:es)?|sr(?:es)?'),
+    cliente: campo(
+      textoOriginal,
+      'nombre del cliente|nombre del titular|nombre o razon social|titular del (?:contrato|servicio|suministro)|razon social|a nombre de|cliente|titular|nombre|senor(?:es)?|sr(?:es)?',
+    ),
     direccion: campo(textoOriginal, 'direccion del? (?:suministro|servicio|inmueble|predio)|direccion de (?:suministro|servicio)|direccion|ubicacion del suministro|domicilio', { minimo: 8, maximo: 140 }),
   }
 }

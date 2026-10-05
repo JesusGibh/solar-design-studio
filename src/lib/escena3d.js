@@ -107,7 +107,8 @@ function crearCubo(contenedor) {
 //   inclinacion y azimut en grados (el azimut es hacia donde cae el agua) · altura: m del suelo al alero
 //   terreno: { canvas, metros } con la imagen satelital centrada en el origen del plano, o null
 //   cuboContenedor: elemento donde dibujar el cubo de orientación (opcional)
-export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinacion, azimut, altura, terreno, cuboContenedor }) {
+//   vista: { posicion, objetivo } de una escena anterior (ver leerVista), para no mover la cámara
+export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinacion, azimut, altura, terreno, cuboContenedor, vista }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -285,6 +286,11 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
   camara.position.set(centroTecho.x - cuesta.x * radio * 1.7, centroTecho.y + radio * 1.5, centroTecho.z + cuesta.y * radio * 1.7)
   const controles = new OrbitControls(camara, renderer.domElement)
   controles.target.copy(centroTecho)
+  // Al reconstruir la escena (cambió la agrupación o la altura) se conserva el punto de vista del usuario.
+  if (vista) {
+    camara.position.fromArray(vista.posicion)
+    controles.target.fromArray(vista.objetivo)
+  }
   controles.enableDamping = true
   controles.dampingFactor = 0.08
   controles.maxPolarAngle = Math.PI / 2 - 0.03 // no se mete bajo el suelo
@@ -359,6 +365,8 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
       enEdicion = activo
       mostrar()
     },
+    // Punto de vista actual, para restaurarlo en la siguiente escena.
+    leerVista: () => ({ posicion: camara.position.toArray(), objetivo: controles.target.toArray() }),
     // Vista cenital, como al pulsar "TOP" en el cubo.
     vistaSuperior() {
       camara.position.set(centroTecho.x, centroTecho.y + radio * 2.6, centroTecho.z + 0.01)

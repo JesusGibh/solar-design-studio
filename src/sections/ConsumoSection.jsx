@@ -56,7 +56,9 @@ export default function ConsumoSection() {
       if (datos.meses) {
         cambios.modo = 'detallado'
         cambios.meses = consumo.meses.map((mes, i) => (datos.meses[i] ? { ...mes, kwh: redondear(datos.meses[i], 0) } : mes))
-        hallazgos.push(`Historial de ${datos.meses.filter(Boolean).length} meses`)
+        hallazgos.push(
+          `Historial de consumo: ${datos.meses.map((kwh, i) => (kwh ? `${MESES[i].slice(0, 3)} ${fmt(kwh, 0)}` : null)).filter(Boolean).join(' · ')} kWh`,
+        )
       } else if (datos.consumoKwh) {
         cambios.modo = 'mensual'
         cambios.promedioKwh = redondear(datos.consumoKwh, 0)
@@ -90,7 +92,7 @@ export default function ConsumoSection() {
       } else if (datos.trifasicoSinVoltaje) {
         hallazgos.push('Servicio trifásico (sin voltaje indicado: elige la tensión a mano)')
       }
-      setFactura({ nombre: archivo.name, metodo, hallazgos })
+      setFactura({ nombre: archivo.name, metodo, hallazgos, texto })
     } catch (error) {
       setFactura({ nombre: archivo.name, error: error.message })
     }
@@ -156,6 +158,15 @@ export default function ConsumoSection() {
                     ))}
                   </ul>
                 </>
+              )}
+              {/* El texto tal como se leyó: sirve para ver por qué no se reconoció un dato. */}
+              {factura.texto && (
+                <details className="mt-2 text-ink-muted">
+                  <summary className="cursor-pointer select-none hover:text-ink">Ver el texto leído de la factura</summary>
+                  <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded border border-line bg-base p-2 font-mono text-[11px] text-ink-muted">
+                    {factura.texto}
+                  </pre>
+                </details>
               )}
             </div>
           )}
