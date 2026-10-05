@@ -7,6 +7,7 @@ import { mkdtempSync, cpSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { respaldar } from './respaldo.js'
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const git = (argumentos, cwd = raiz) => execFileSync('git', argumentos, { cwd, encoding: 'utf8' }).trim()
@@ -15,6 +16,13 @@ const remoto = git(['remote', 'get-url', 'origin'])
 const repositorio = remoto.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/)
 if (!repositorio) throw new Error(`El remoto origin no es de GitHub: ${remoto}`)
 const [, usuario, nombre] = repositorio
+
+// Lo que se publica sale de datos/: antes se deja una copia, por si hay que volver atrás.
+try {
+  respaldar().forEach((copia) => console.log(`Respaldo de la base de datos: ${copia}`))
+} catch (error) {
+  console.warn(`Sin respaldo: ${error.message}`)
+}
 
 console.log(`Compilando para /${nombre}/ …`)
 execFileSync(process.execPath, [path.join(raiz, 'node_modules/vite/bin/vite.js'), 'build', `--base=/${nombre}/`], { cwd: raiz, stdio: 'inherit' })
