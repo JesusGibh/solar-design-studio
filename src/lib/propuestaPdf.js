@@ -270,32 +270,59 @@ export function construirPropuestaPdf(jsPDF, datos) {
     })
   }
 
-  // Día típico: campana de generación frente al consumo medio del sitio.
+  // Día típico: campana de generación frente al consumo medio del sitio. Rotula el pico y devuelve
+  // el reparto de la energía del día: { directo, excedente, red } en kWh.
   const graficoDia = (x, y, ancho, alto, energiaDia, consumoMedioKw) => {
     const pico = energiaDia / 6 // área de sen² entre las 6 y las 18 h
     const generacion = (hora) => (hora > 6 && hora < 18 ? pico * Math.sin((Math.PI * (hora - 6)) / 12) ** 2 : 0)
-    const aY = ejes(x, y, ancho, alto, marcas(0, Math.max(pico, consumoMedioKw) * 1.1), (v) => num(v, v % 1 ? 1 : 0), 'kW')
+    const aY = ejes(x, y, ancho, alto, marcas(0, Math.max(pico, consumoMedioKw) * 1.18), (v) => num(v, v % 1 ? 1 : 0), 'kW')
     const aX = (hora) => x + (ancho * hora) / 24
     const horas = Array.from({ length: 97 }, (_, i) => i / 4)
     const curva = (fn) => horas.map((hora) => [aX(hora), aY(fn(hora))])
+    // Franjas de noche, para leer de un vistazo cuándo hay sol.
+    caja(x, y, aX(6) - x, alto, tinte(GRIS, 0.88))
+    caja(aX(18), y, x + ancho - aX(18), alto, tinte(GRIS, 0.88))
     // Lo que cubre la red (gris), el excedente (tinte de la generación) y lo que cubre el sol.
-    caja(x, aY(consumoMedioKw), ancho, aY(0) - aY(consumoMedioKw), tinte(GRIS, 0.55))
-    poligono([...curva(generacion), [aX(24), aY(0)], [aX(0), aY(0)]], tinte(SERIE_2, 0.45))
+    caja(x, aY(consumoMedioKw), ancho, aY(0) - aY(consumoMedioKw), tinte(GRIS, 0.45))
+    poligono([...curva(generacion), [aX(24), aY(0)], [aX(0), aY(0)]], tinte(SERIE_2, 0.5))
     poligono([...curva((hora) => Math.min(generacion(hora), consumoMedioKw)), [aX(24), aY(0)], [aX(0), aY(0)]], SERIE_1)
-    polilinea(curva(generacion), SERIE_2, 0.5)
+    polilinea(curva(generacion), SERIE_2, 0.7)
     doc.setDrawColor(...TINTA)
     doc.setLineWidth(0.4)
     doc.line(x, aY(consumoMedioKw), x + ancho, aY(consumoMedioKw))
-    for (let hora = 0; hora <= 24; hora += 4) texto(`${hora} h`, aX(hora), y + alto + 4.5, { tamano: 7, color: TENUE, align: 'center' })
+    texto(`Consumo medio ${num(consumoMedioKw, 1)} kW`, x + ancho - 1.5, aY(consumoMedioKw) - 1.5, { tamano: 7, negrita: true, align: 'right' })
+    marcador(aX(12), aY(pico), SERIE_2)
+    texto(`Pico de generación ${num(pico, 1)} kW`, aX(12), aY(pico) - 3, { tamano: 7.5, negrita: true, align: 'center' })
+    for (let hora = 0; hora <= 24; hora += 3) texto(`${hora}:00`, aX(hora), y + alto + 4.5, { tamano: 7, color: TENUE, align: hora === 24 ? 'right' : hora === 0 ? 'left' : 'center' })
     leyenda(
       [
         [SERIE_1, 'Consumo cubierto por el sol'],
-        [tinte(SERIE_2, 0.45), 'Excedente diurno'],
-        [tinte(GRIS, 0.55), 'Consumo cubierto por la red'],
+        [tinte(SERIE_2, 0.5), 'Excedente diurno'],
+        [tinte(GRIS, 0.45), 'Consumo cubierto por la red'],
       ],
       x,
       y - 5,
     )
+    const directo = horas.slice(1).reduce((suma, hora) => suma + Math.min(generacion(hora), consumoMedioKw) * 0.25, 0)
+    return { directo, excedente: energiaDia - directo, red: consumoMedioKw * 24 - directo }
+  }
+
+  // Tira de cifras al estilo de un panel de producción: etiqueta pequeña y valor grande, en columnas.
+  const cifras = (lista, y) => {
+    const ancho = UTIL / lista.length
+    caja(MARGEN, y, UTIL, 17, FONDO, 1.6)
+    lista.forEach(([etiqueta, valor, unidad], i) => {
+      const cx = MARGEN + ancho * i + 4
+      if (i) {
+        doc.setDrawColor(...LINEA)
+        doc.setLineWidth(0.2)
+        doc.line(MARGEN + ancho * i, y + 3, MARGEN + ancho * i, y + 14)
+      }
+      texto(etiqueta, cx, y + 5.5, { tamano: 7, color: TENUE })
+      texto(valor, cx, y + 12.5, { tamano: 12.5, negrita: true, color: PRIMARIO })
+      if (unidad) texto(unidad, cx + anchoDe(valor, 12.5, true) + 1, y + 12.5, { tamano: 7, color: TENUE })
+    })
+    return y + 22
   }
 
   // Factura anual antes y después del sistema.
@@ -387,7 +414,7 @@ export function construirPropuestaPdf(jsPDF, datos) {
     ['Cliente', propuesta.cliente || 'Por definir'],
     ['Sitio', propuesta.direccion || 'Por definir'],
     ['Sistema propuesto', `${sistema.numPaneles} módulos ${panel.marca} de ${panel.potencia_wp} Wp · ${num(evaluacion.kwp, 2)} kWp · ${num(evaluacion.generacionAnualKwh)} kWh/año`],
-    ['Elaborado por', `${autor.nombre} — ${autor.cargo}`],
+    ['Elaborado por', autor.firma ?? autor.nombre],
     ['Validez', `${propuesta.validezDias} días calendario a partir de la fecha de emisión`],
   ]
   ficha.forEach(([clave, valor], i) => {
@@ -595,10 +622,21 @@ export function construirPropuestaPdf(jsPDF, datos) {
   y = nuevaHoja('Rendimiento solar esperado')
   const generacionMes = evaluacion.generacionPorMes
   const consumoMes = consumo.mensual
-  y = subtitulo('Producción mensual frente al consumo', y)
+  y = cifras(
+    [
+      ['Producción anual', num(evaluacion.generacionAnualKwh), 'kWh'],
+      ['Promedio mensual', num(evaluacion.generacionMensualKwh), 'kWh'],
+      ['Compensación', evaluacion.cobertura != null ? num(evaluacion.cobertura * 100) : '—', '%'],
+      ['Paneles', `${sistema.numPaneles}`, ''],
+      ['Rendimiento', num(evaluacion.generacionAnualKwh / evaluacion.kwp), 'kWh/kWp'],
+      ['Performance ratio', num(parametros.pr, 2), ''],
+    ],
+    y - 2,
+  )
+  y = subtitulo('Producción mensual frente al consumo', y + 1)
   if (consumoMes && generacionMes) {
-    graficoMensual(MARGEN + 12, y + 9, UTIL - 12, 56, consumoMes, generacionMes)
-    y += 78
+    graficoMensual(MARGEN + 12, y + 9, UTIL - 12, 50, consumoMes, generacionMes)
+    y += 70
     const trimestre = (lista, t) => lista.slice(t * 3, t * 3 + 3).reduce((suma, valor) => suma + valor, 0)
     const diasTrimestre = (t) => DIAS.slice(t * 3, t * 3 + 3).reduce((suma, valor) => suma + valor, 0)
     y = tabla(
@@ -614,27 +652,26 @@ export function construirPropuestaPdf(jsPDF, datos) {
     y = parrafo('Ingresa el consumo del sitio para comparar la producción mes a mes.', y)
   }
 
-  y = subtitulo('Cómo se comporta el sistema en un día típico', y + 2)
   if (consumo.promedioKwh) {
-    graficoDia(MARGEN + 12, y + 9, UTIL - 12, 42, evaluacion.generacionAnualKwh / 365, consumo.promedioKwh / 730)
-    y += 60
-    y = parrafo(
-      'Durante las horas centrales del día la generación supera al consumo medio del inmueble. Ese excedente puede entregarse a la red, almacenarse en baterías o recortarse, según la configuración del sistema. La curva de consumo es el promedio del sitio; el perfil horario real puede diferir.',
-      y,
-      { tamano: 8.5 },
-    )
-  }
-
-  if (proyeccion && y < 248) {
-    y = subtitulo('Beneficio ambiental', y + 3)
-    filaIndicadores(
+    y = subtitulo('Cómo se comporta el sistema en un día típico', y + 1)
+    const energiaDia = evaluacion.generacionAnualKwh / 365
+    const reparto = graficoDia(MARGEN + 12, y + 9, UTIL - 12, 44, energiaDia, consumo.promedioKwh / 730)
+    y += 62
+    y = cifras(
       [
-        { icono: 'generacion', valor: num(proyeccion.generacionTotal), unidad: 'kWh', etiqueta: 'energía limpia en 25 años' },
-        { icono: 'ambiente', valor: num(proyeccion.co2Anual, 1), unidad: 't', etiqueta: 'CO₂ evitado por año', destacado: true },
-        { icono: 'ambiente', valor: num(proyeccion.co2Toneladas), unidad: 't', etiqueta: 'CO₂ evitado en 25 años' },
+        ['Generación del día', num(energiaDia), 'kWh'],
+        ['Consumida directamente', num(reparto.directo), `kWh · ${num((reparto.directo / energiaDia) * 100)} %`],
+        ['Excedente diurno', num(reparto.excedente), 'kWh'],
+        ['Tomada de la red', num(reparto.red), 'kWh'],
       ],
       y,
-      25,
+    )
+    texto(
+      'La curva de consumo es el promedio del sitio; el perfil horario real puede diferir. El excedente puede entregarse a la red, almacenarse en baterías o recortarse, según la configuración del sistema.' +
+        (proyeccion ? ` Beneficio ambiental: ${num(proyeccion.co2Anual, 1)} t de CO₂ evitadas por año y ${num(proyeccion.co2Toneladas)} t en 25 años.` : ''),
+      MARGEN,
+      y + 1,
+      { tamano: 8, color: TENUE, ancho: UTIL, interlineado: 1.4 },
     )
   }
 

@@ -205,6 +205,45 @@ export default function DisenoSection() {
               hint="Acorta en planta el lado del panel que sube por la pendiente."
               onChange={(inclinacion) => cambiar({ inclinacion })}
             />
+            <fieldset className="sm:col-span-2">
+              <legend className={labelClass}>Pasillos de inspección</legend>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <NumberField
+                  label="Cada N paneles"
+                  value={datos.pasilloCadaPaneles}
+                  options={[2, 3, 4, 6]}
+                  placeholder="3"
+                  onChange={(pasilloCadaPaneles) => cambiar({ pasilloCadaPaneles })}
+                />
+                <NumberField
+                  label="Separación"
+                  unit="cm"
+                  value={datos.pasilloPanelesCm}
+                  options={[30, 40, 50]}
+                  placeholder="40"
+                  onChange={(pasilloPanelesCm) => cambiar({ pasilloPanelesCm })}
+                />
+                <NumberField
+                  label="Cada N filas"
+                  value={datos.pasilloCadaFilas}
+                  options={[1, 2, 3, 4]}
+                  placeholder="2"
+                  onChange={(pasilloCadaFilas) => cambiar({ pasilloCadaFilas })}
+                />
+                <NumberField
+                  label="Separación"
+                  unit="cm"
+                  value={datos.pasilloFilasCm}
+                  options={[30, 40, 50]}
+                  placeholder="50"
+                  onChange={(pasilloFilasCm) => cambiar({ pasilloFilasCm })}
+                />
+              </div>
+              <p className="mt-1 text-xs text-ink-dim">
+                Deja un espacio libre cada cierto número de paneles a lo largo de la fila y cada cierto número de filas. Vacío: solo los 2 cm
+                normales entre paneles.
+              </p>
+            </fieldset>
             <NumberField
               label="Altura del edificio"
               unit="m"

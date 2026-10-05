@@ -185,37 +185,53 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
     escena.add(rotulo)
   })
 
-  // --- Paneles: cada uno es su propia malla (marco + vidrio con celdas), apoyada sobre el plano del techo.
-  // Se crea una posición por cada hueco del empaquetado: el panel (visible si está colocado) y una
-  // "huella" translúcida que marca dónde se puede colocar uno en el modo de acomodo.
-  const posiciones = []
+  // --- Paneles: marco y vidrio con celdas sobre el plano del techo, más una "huella" translúcida por
+  // posición que marca dónde se puede colocar un panel en el modo de acomodo.
+  // Se dibujan como mallas instanciadas (una llamada de dibujo para todos los marcos, otra para los
+  // vidrios y otra para las huellas): un techo industrial puede tener miles de posiciones.
+  const total = plano.paneles.length
+  const oculto = new THREE.Matrix4().makeScale(0, 0, 0)
+  const matrices = [] // por posición: { marco, vidrio, huella }
+  let instancias = null // { marcos, vidrios, huellas }
   let enEdicion = false
-  const mostrar = (conPanel) => {
-    posiciones.forEach(({ panel, huella }, indice) => {
-      panel.visible = conPanel.has(indice)
-      huella.visible = enEdicion && !conPanel.has(indice)
-    })
-  }
   let conPanel = new Set(ocupados)
-  if (plano.paneles.length) {
+  const mostrar = () => {
+    if (!instancias) return
+    matrices.forEach((matriz, indice) => {
+      const colocado = conPanel.has(indice)
+      instancias.marcos.setMatrixAt(indice, colocado ? matriz.marco : oculto)
+      instancias.vidrios.setMatrixAt(indice, colocado ? matriz.vidrio : oculto)
+      instancias.huellas.setMatrixAt(indice, enEdicion && !colocado ? matriz.huella : oculto)
+    })
+    for (const malla of Object.values(instancias)) {
+      malla.instanceMatrix.needsUpdate = true
+      malla.computeBoundingSphere() // el toque (raycast) usa esta esfera para descartar rápido
+    }
+  }
+  if (total) {
     const [p0, p1, , p3] = plano.paneles[0].map((p) => punto(p))
     const ancho = p0.distanceTo(p1)
     const largo = p0.distanceTo(p3) // medido sobre la pendiente: ya es el largo real del módulo
-    const geometriaMarco = new THREE.BoxGeometry(ancho, largo, GROSOR_PANEL)
-    const geometriaVidrio = new THREE.BoxGeometry(ancho - 0.03, largo - 0.03, 0.006)
-    const materialMarco = new THREE.MeshStandardMaterial({ color: '#d3d9e0', metalness: 0.85, roughness: 0.35 })
     const materialVidrio = new THREE.MeshPhysicalMaterial({
       map: ancho < largo ? texturaFotovoltaica(6, 12) : texturaFotovoltaica(12, 6),
       // Reflejo sutil: lo justo para que el vidrio brille sin lavar el azul de las celdas.
-      metalness: 0.05,
-      roughness: 0.38,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.35,
-      envMapIntensity: 0.12,
+      metalness: 0,
+      roughness: 0.62,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.5,
+      envMapIntensity: 0.1,
     })
-    const geometriaHuella = new THREE.BoxGeometry(ancho - 0.04, largo - 0.04, 0.01)
-    const materialHuella = new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.28, depthWrite: false })
-    plano.paneles.forEach((esquinas, indice) => {
+    instancias = {
+      marcos: new THREE.InstancedMesh(new THREE.BoxGeometry(ancho, largo, GROSOR_PANEL), new THREE.MeshStandardMaterial({ color: '#d3d9e0', metalness: 0.85, roughness: 0.35 }), total),
+      vidrios: new THREE.InstancedMesh(new THREE.BoxGeometry(ancho - 0.03, largo - 0.03, 0.006), materialVidrio, total),
+      huellas: new THREE.InstancedMesh(
+        new THREE.BoxGeometry(ancho - 0.04, largo - 0.04, 0.01),
+        new THREE.MeshBasicMaterial({ color: '#f59e0b', transparent: true, opacity: 0.28, depthWrite: false }),
+        total,
+      ),
+    }
+    instancias.marcos.castShadow = true
+    for (const esquinas of plano.paneles) {
       const [a, b, c, d] = esquinas.map((p) => punto(p))
       const ejeFila = b.clone().sub(a).normalize()
       const ejePendiente = d.clone().sub(a).normalize()
@@ -224,26 +240,16 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
         ejeFila.negate()
         normal.negate()
       }
-      const orientacion = new THREE.Matrix4().makeBasis(ejeFila, ejePendiente, normal)
       const centro = a.clone().add(b).add(c).add(d).multiplyScalar(0.25)
-
-      const marco = new THREE.Mesh(geometriaMarco, materialMarco)
-      marco.setRotationFromMatrix(orientacion)
-      marco.position.copy(centro).addScaledVector(normal, SEPARACION_TECHO + GROSOR_PANEL / 2)
-      marco.castShadow = true
-      const vidrio = new THREE.Mesh(geometriaVidrio, materialVidrio)
-      vidrio.setRotationFromMatrix(orientacion)
-      vidrio.position.copy(centro).addScaledVector(normal, SEPARACION_TECHO + GROSOR_PANEL + 0.001)
-      const panel = new THREE.Group().add(marco, vidrio)
-      const huella = new THREE.Mesh(geometriaHuella, materialHuella)
-      huella.setRotationFromMatrix(orientacion)
-      huella.position.copy(centro).addScaledVector(normal, 0.03)
-      // El índice permite saber qué posición se tocó al acomodar paneles.
-      marco.userData.indice = huella.userData.indice = indice
-      posiciones.push({ panel, huella, objetivos: [marco, huella] })
-      escena.add(panel, huella)
-    })
-    mostrar(conPanel)
+      const en = (elevacion) => new THREE.Matrix4().makeBasis(ejeFila, ejePendiente, normal).setPosition(centro.clone().addScaledVector(normal, elevacion))
+      matrices.push({
+        marco: en(SEPARACION_TECHO + GROSOR_PANEL / 2),
+        vidrio: en(SEPARACION_TECHO + GROSOR_PANEL + 0.001),
+        huella: en(0.03),
+      })
+    }
+    escena.add(instancias.marcos, instancias.vidrios, instancias.huellas)
+    mostrar()
   }
 
   // --- Terreno: la imagen satelital a escala real, centrada en el origen del plano.
@@ -301,9 +307,9 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
       new THREE.Vector2(((evento.clientX - caja.left) / caja.width) * 2 - 1, -((evento.clientY - caja.top) / caja.height) * 2 + 1),
       camara,
     )
-    const visibles = posiciones.flatMap(({ panel, huella, objetivos }) => (panel.visible ? [objetivos[0]] : huella.visible ? [objetivos[1]] : []))
-    const [tocado] = rayo.intersectObjects(visibles, false)
-    if (tocado) alAlternar?.(tocado.object.userData.indice)
+    if (!instancias) return
+    const [tocado] = rayo.intersectObjects([instancias.marcos, instancias.huellas], false)
+    if (tocado) alAlternar?.(tocado.instanceId)
   }
   renderer.domElement.addEventListener('pointerdown', alPulsar)
   renderer.domElement.addEventListener('pointerup', alSoltar)
@@ -332,10 +338,13 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
       camara.aspect = ancho / alto
       camara.updateProjectionMatrix()
       // Las huellas del modo de acomodo son una ayuda de edición: no salen en la imagen.
-      for (const { huella } of posiciones) huella.visible = false
+      const editando = enEdicion
+      enEdicion = false
+      mostrar()
       renderer.render(escena, camara)
       const imagen = renderer.domElement.toDataURL('image/png')
-      mostrar(conPanel)
+      enEdicion = editando
+      mostrar()
       renderer.setPixelRatio(proporcion)
       ajustar()
       return imagen
@@ -343,12 +352,12 @@ export function crearEscena(contenedor, { plano, ocupados, alAlternar, inclinaci
     // Cambia qué posiciones llevan panel, sin reconstruir la escena.
     actualizarOcupados(indices) {
       conPanel = new Set(indices)
-      mostrar(conPanel)
+      mostrar()
     },
     // Modo de acomodo: muestra las huellas libres y permite alternar paneles con un toque.
     setEdicion(activo) {
       enEdicion = activo
-      mostrar(conPanel)
+      mostrar()
     },
     // Vista cenital, como al pulsar "TOP" en el cubo.
     vistaSuperior() {

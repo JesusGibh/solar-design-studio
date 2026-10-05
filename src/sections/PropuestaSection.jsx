@@ -407,6 +407,14 @@ export default function PropuestaSection() {
                   El sistema cubre el <span className="font-mono text-ink">{fmt(evaluacion.cobertura * 100, 0)} %</span> del consumo
                   anual: {fmt(evaluacion.generacionAnualKwh, 0)} de {fmt(resumen.anualKwh, 0)} kWh.
                 </p>
+                <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+                  <Stat label="Producción anual" value={fmt(evaluacion.generacionAnualKwh, 0)} unit="kWh" />
+                  <Stat label="Promedio mensual" value={fmt(evaluacion.generacionMensualKwh, 0)} unit="kWh" />
+                  <Stat label="Compensación" value={fmt(evaluacion.cobertura * 100, 0)} unit="%" />
+                  <Stat label="Paneles" value={fmt(sistema.numPaneles, 0)} />
+                  <Stat label="Rendimiento" value={fmt(evaluacion.generacionAnualKwh / evaluacion.kwp, 0)} unit="kWh/kWp" />
+                  <Stat label="Performance ratio" value={fmt(parametros.pr, 2)} />
+                </div>
                 <GraficoMensual consumo={resumen.mensual} generacion={evaluacion.generacionPorMes} />
                 <p className="mt-2 text-xs text-ink-dim">
                   La generación anual se reparte entre los meses con el perfil de irradiación elegido en Consumo.

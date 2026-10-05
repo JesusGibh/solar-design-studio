@@ -91,8 +91,10 @@ const DESFASES = 5 // posiciones de arranque de la cuadrícula que se prueban en
 // Mide el techo y lo llena con una cuadrícula de paneles alineada al lado más largo (o al azimut indicado).
 //   vertices: [[lat, lng], …] · panel: { largo_mm, ancho_mm } o null · orientacion: 'vertical' | 'horizontal'
 //   inclinacion en grados · retranqueo en metros · azimutManual en grados o null
+//   pasillos: { columnas: { cada, ancho }, filas: { cada, ancho } } — cada N paneles a lo largo de la
+//     fila (o cada N filas) se deja un pasillo de `ancho` metros en lugar de la separación normal
 // Devuelve { areaM2, areaInclinadaM2, azimut, cantidad, rectangulos } con cada rectángulo como 4 [lat, lng].
-export function analizarTecho({ vertices, panel, orientacion = 'vertical', inclinacion = 0, retranqueo = 0.5, azimutManual = null }) {
+export function analizarTecho({ vertices, panel, orientacion = 'vertical', inclinacion = 0, retranqueo = 0.5, azimutManual = null, pasillos = {} }) {
   if (!vertices || vertices.length < 3) return null
   const { lat0, aPlano, aMapa } = proyeccionLocal(vertices)
   const puntos = vertices.map(aPlano)
@@ -121,12 +123,24 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
   const ys = poligono.map((p) => p.y)
   const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
 
+  // Posiciones a lo largo de un eje. Entre paneles van 2 cm; cada `cada` paneles, en su lugar,
+  // un pasillo de inspección del ancho indicado (30, 40, 50 cm…).
+  const posiciones = (inicio, fin, tamano, { cada, ancho: pasillo } = {}) => {
+    const lista = []
+    for (let p = inicio, k = 1; p + tamano <= fin; k++) {
+      lista.push(p)
+      p += tamano + (cada >= 1 && pasillo > 0 && k % cada === 0 ? pasillo : SEPARACION)
+    }
+    return lista
+  }
+
   let mejor = []
   for (let i = 0; i < DESFASES; i++) {
     for (let j = 0; j < DESFASES; j++) {
       const colocados = []
-      for (let y = minY + retranqueo + (j * pasoY) / DESFASES; y + altoFila <= maxY; y += pasoY) {
-        for (let x = minX + retranqueo + (i * pasoX) / DESFASES; x + anchoFila <= maxX; x += pasoX) {
+      const columnas = posiciones(minX + retranqueo + (i * pasoX) / DESFASES, maxX, anchoFila, pasillos.columnas)
+      for (const y of posiciones(minY + retranqueo + (j * pasoY) / DESFASES, maxY, altoFila, pasillos.filas)) {
+        for (const x of columnas) {
           // El retranqueo se verifica agrandando el rectángulo: todo el margen debe quedar dentro del techo.
           if (rectanguloDentro(poligono, x - retranqueo, y - retranqueo, x + anchoFila + retranqueo, y + altoFila + retranqueo)) {
             colocados.push([x, y])

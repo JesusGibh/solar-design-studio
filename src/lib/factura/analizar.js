@@ -20,7 +20,7 @@ export function leerNumero(crudo) {
 }
 
 const NUM = '(\\d[\\d.,]*)'
-const MONEDA = '(?:rd\\$|us\\$|usd|u\\$s|\\$|bs\\.?|mxn|cop|q|l\\.?|s\\/\\.?)?'
+const MONEDA = '(?:rd\\$|us\\$|usd|u\\$s|\\$|b\\/\\.?|bs\\.?|mxn|cop|q|l\\.?|s\\/\\.?)?'
 const MESES_ABREV = ['ene|jan', 'feb', 'mar', 'abr|apr', 'may', 'jun', 'jul', 'ago|aug', 'sep|set', 'oct', 'nov', 'dic|dec']
 
 const sinAcentos = (texto) => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -53,8 +53,29 @@ function tension(texto) {
   return null
 }
 
+// Dato de texto que sigue a una etiqueta en el mismo renglón ("Cliente: Fulano") o, si el renglón
+// solo trae la etiqueta, en el siguiente. Se descarta lo que no parece un nombre o una dirección.
+function campo(textoOriginal, etiquetas, { minimo = 4, maximo = 110 } = {}) {
+  const lineas = textoOriginal.split(/\r?\n/).map((linea) => linea.trim())
+  // Con dos puntos el dato sigue en el renglón; si el renglón es solo la etiqueta, está en el siguiente.
+  // Sin esa exigencia, una frase como "Estimado cliente, le informamos…" pasaría por un nombre.
+  const conValor = new RegExp(`(?:^|\\s)(?:${etiquetas})\\s*:\\s*(\\S.*)$`)
+  const soloEtiqueta = new RegExp(`^(?:${etiquetas})\\s*:?$`)
+  for (let i = 0; i < lineas.length; i++) {
+    const normalizada = sinAcentos(lineas[i])
+    const hallado = normalizada.match(conValor)
+    if (!hallado && !soloEtiqueta.test(normalizada)) continue
+    // El valor se toma del renglón original (con sus acentos y mayúsculas), no del normalizado.
+    let valor = hallado ? lineas[i].slice(lineas[i].length - hallado[1].length) : (lineas[i + 1] ?? '')
+    valor = valor.replace(/\s{2,}.*$/, '').replace(/[|;]+.*$/, '').trim()
+    if (valor.length >= minimo && valor.length <= maximo && /\p{L}{3}/u.test(valor)) return valor
+  }
+  return null
+}
+
 // Devuelve lo encontrado; cada campo queda en null si no aparece.
-//   consumoKwh (del periodo) · meses (12 kWh o null) · total · tarifa · tarifaCalculada · tension · trifasicoSinVoltaje
+//   consumoKwh (del periodo) · meses (12 kWh o null) · total · tarifa · tarifaCalculada · tension ·
+//   trifasicoSinVoltaje · cliente · direccion
 export function analizarFactura(textoOriginal) {
   const texto = sinAcentos(textoOriginal)
   const esConsumo = (valor) => valor >= 10 && valor <= 2_000_000
@@ -99,5 +120,7 @@ export function analizarFactura(textoOriginal) {
     tarifaCalculada: tarifaLeida == null && tarifaCalculada != null,
     tension: red,
     trifasicoSinVoltaje: !red && /trifasic|three.?phase/.test(texto),
+    cliente: campo(textoOriginal, 'nombre del cliente|nombre del titular|titular del (?:contrato|servicio|suministro)|razon social|cliente|titular|nombre|senor(?:es)?|sr(?:es)?'),
+    direccion: campo(textoOriginal, 'direccion del? (?:suministro|servicio|inmueble|predio)|direccion de (?:suministro|servicio)|direccion|ubicacion del suministro|domicilio', { minimo: 8, maximo: 140 }),
   }
 }

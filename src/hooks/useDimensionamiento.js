@@ -53,9 +53,24 @@ export function useDimensionamiento() {
         inclinacion: Math.min(60, Math.max(0, numero(datosTecho.inclinacion, 0))),
         retranqueo: Math.max(0, numero(datosTecho.retranqueo, 0.5)),
         azimutManual: datosTecho.azimut === '' ? null : numero(datosTecho.azimut, null),
+        pasillos: {
+          columnas: { cada: Math.floor(aNumero(datosTecho.pasilloCadaPaneles) ?? 0), ancho: (aNumero(datosTecho.pasilloPanelesCm) ?? 0) / 100 },
+          filas: { cada: Math.floor(aNumero(datosTecho.pasilloCadaFilas) ?? 0), ancho: (aNumero(datosTecho.pasilloFilasCm) ?? 0) / 100 },
+        },
       }),
     // Solo la geometría: mover el mapa o acomodar paneles no debe recalcular (ni redibujar en 3D) el techo.
-    [datosTecho.vertices, datosTecho.orientacion, datosTecho.inclinacion, datosTecho.retranqueo, datosTecho.azimut, panel],
+    [
+      datosTecho.vertices,
+      datosTecho.orientacion,
+      datosTecho.inclinacion,
+      datosTecho.retranqueo,
+      datosTecho.azimut,
+      datosTecho.pasilloCadaPaneles,
+      datosTecho.pasilloPanelesCm,
+      datosTecho.pasilloCadaFilas,
+      datosTecho.pasilloFilasCm,
+      panel,
+    ],
   )
 
   const parametros = useMemo(
@@ -131,7 +146,9 @@ export function useDimensionamiento() {
   // acomodó paneles a mano en la vista 3D (y la cuadrícula no ha cambiado), manda su selección.
   const firmaTecho = techo?.cantidad ? `${panel?.id}|${techo.cantidad}|${techo.rectangulos[0][0].map((n) => n.toFixed(6))}|${techo.rectangulos.at(-1)[2].map((n) => n.toFixed(6))}` : null
   const acomodoValido = Boolean(firmaTecho) && datosTecho.acomodo?.firma === firmaTecho
-  const numSistema = sistema?.numPaneles ?? 0
+  // Sin sistema dimensionado todavía (falta el consumo), el techo se muestra lleno: así los paneles
+  // aparecen en cuanto se traza y se ve cuántos caben.
+  const numSistema = sistema ? sistema.numPaneles : (techo?.cantidad ?? 0)
   const ocupados = useMemo(() => {
     if (!techo?.cantidad) return []
     if (acomodoValido) return datosTecho.acomodo.indices.filter((indice) => indice < techo.cantidad)

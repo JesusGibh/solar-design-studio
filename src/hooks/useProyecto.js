@@ -41,6 +41,11 @@ export const PROYECTO_INICIAL = {
     inclinacion: '10', // °
     altura: '5', // m del suelo al borde bajo del techo (solo para la vista 3D)
     azimut: '', // ° ; vacío = estimado a partir del trazo
+    // Pasillos de inspección: cada N paneles a lo largo de la fila, y cada N filas, una separación en cm.
+    pasilloCadaPaneles: '',
+    pasilloPanelesCm: '',
+    pasilloCadaFilas: '',
+    pasilloFilasCm: '',
     // Paneles colocados a mano en la vista 3D: { firma, indices } sobre las posiciones del empaquetado.
     // La firma identifica la cuadrícula; si esta cambia (otro panel, retranqueo…), el acomodo se descarta.
     acomodo: null,

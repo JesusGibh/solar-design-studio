@@ -73,6 +73,17 @@ export default function ConsumoSection() {
         hallazgos.push(`Total facturado: ${fmt(datos.total, 2)}`)
       }
       if (Object.keys(cambios).length) actualizar('consumo', cambios)
+      // Los datos del cliente pasan directo a la propuesta.
+      const delCliente = {}
+      if (datos.cliente) {
+        delCliente.cliente = datos.cliente
+        hallazgos.push(`Cliente: ${datos.cliente}`)
+      }
+      if (datos.direccion) {
+        delCliente.direccion = datos.direccion
+        hallazgos.push(`Dirección: ${datos.direccion}`)
+      }
+      if (Object.keys(delCliente).length) actualizar('propuesta', delCliente)
       if (datos.tension) {
         actualizar('red', { tension: datos.tension })
         hallazgos.push(`Red: ${getRed(datos.tension).label}`)
@@ -120,7 +131,7 @@ export default function ConsumoSection() {
             imagenes
             multiple={false}
             titulo="Arrastrar o subir la factura eléctrica (PDF o imagen)"
-            descripcion="Se leen el consumo, la tarifa o el total y el tipo de red para rellenar el formulario."
+            descripcion="Se leen el cliente, la dirección, el consumo, el costo del kWh y el tipo de red, y se cargan en el proyecto y en la propuesta."
             ocupado="Leyendo la factura…"
           />
           {factura && (
@@ -133,7 +144,7 @@ export default function ConsumoSection() {
               {factura.error ? (
                 `${factura.nombre}: no se pudo leer (${factura.error}).`
               ) : factura.hallazgos.length === 0 ? (
-                `${factura.nombre}: no se reconoció consumo, tarifa ni tipo de red. Ingresa los datos a mano.`
+                `${factura.nombre}: no se reconocieron los datos del cliente, el consumo ni la tarifa. Ingrésalos a mano.`
               ) : (
                 <>
                   <p className="font-medium">
