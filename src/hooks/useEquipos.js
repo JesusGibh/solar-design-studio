@@ -62,6 +62,20 @@ export function useEquipos() {
     return resultado
   }, [])
 
+  // Sustituye categorías enteras por lo traído de la hoja de propuestas (solo las que traen equipos).
+  const reemplazarCatalogo = useCallback((porCategoria, origen) => {
+    setState((prev) => {
+      const reemplazos = { ...prev.reemplazos }
+      const fuentes = { ...prev.fuentes }
+      for (const [id, equipos] of Object.entries(porCategoria)) {
+        if (!equipos?.length) continue
+        reemplazos[id] = equipos
+        fuentes[id] = { url: origen, fecha: new Date().toISOString() }
+      }
+      return { ...prev, reemplazos, fuentes }
+    })
+  }, [])
+
   const agregar = useCallback((registros) => {
     setState((prev) => ({ ...prev, agregados: agregarRegistros(prev.agregados, registros) }))
   }, [])
@@ -80,5 +94,5 @@ export function useEquipos() {
     [state],
   )
 
-  return { catalogo, fuentes: state.fuentes, modificadas, cargarDesdeSheet, agregar, restaurar }
+  return { catalogo, fuentes: state.fuentes, modificadas, cargarDesdeSheet, reemplazarCatalogo, agregar, restaurar }
 }

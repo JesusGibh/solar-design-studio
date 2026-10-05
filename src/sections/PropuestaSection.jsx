@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, Download, FilePlus2, FileText, LoaderCircle, Presentation, TrendingUp, Wallet } from 'lucide-react'
+import { BarChart3, Download, FileText, LoaderCircle, Presentation, Save, TrendingUp, Wallet } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import VistaPreviaPropuesta from '../components/VistaPreviaPropuesta.jsx'
 import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
@@ -12,7 +12,8 @@ import { useCaptura3d } from '../lib/captura3d.js'
 import { cargarLogo } from '../lib/marca.js'
 import { aNumero } from '../lib/consumo.js'
 import { DEFECTOS_FINANZAS, proyectar } from '../lib/finanzas.js'
-import { siguienteIdPropuesta } from '../lib/numeracion.js'
+import { guardarPropuesta, registroDe } from '../lib/historial.js'
+import { reservarIdPropuesta } from '../lib/numeracion.js'
 
 const PRECIOS_WP = [0.85, 0.95, 1.1, 1.25]
 
@@ -54,6 +55,7 @@ export default function PropuestaSection() {
   const { finanzas, propuesta } = proyecto
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
+  const [guardado, setGuardado] = useState(null) // { ok, texto } del último guardado
   const captura = useCaptura3d()
   const marca = getBrand(propuesta.marca)
   const autor = getAuthor(propuesta.autor)
@@ -61,13 +63,24 @@ export default function PropuestaSection() {
   const cambiar = (cambios) => actualizar('finanzas', cambios)
   const cambiarPropuesta = (cambios) => actualizar('propuesta', cambios)
 
-  // La primera vez que se abre la propuesta se le asigna su número correlativo.
+  // Una propuesta sin número (recién limpiada o copiada del historial) toma el siguiente correlativo:
+  // lo reparte la hoja de Google Sheets si está conectada; si no, el contador de este navegador.
   useEffect(() => {
-    if (!leerProyecto().propuesta.id) actualizar('propuesta', { id: siguienteIdPropuesta() })
-  }, [actualizar])
+    if (propuesta.id) return
+    let vigente = true
+    reservarIdPropuesta().then((id) => {
+      if (vigente && !leerProyecto().propuesta.id) actualizar('propuesta', { id })
+    })
+    return () => {
+      vigente = false
+    }
+  }, [propuesta.id, actualizar])
 
-  // Nueva propuesta: siguiente número y datos del cliente en blanco; el diseño técnico se conserva.
-  const nuevaPropuesta = () => cambiarPropuesta({ id: siguienteIdPropuesta(), cliente: '', direccion: '' })
+  // Guarda la propuesta en el historial (y en la hoja, si está conectada). Con el mismo número, actualiza.
+  const guardar = async () => {
+    const resultado = await guardarPropuesta(registroDe({ proyecto, sistema, proyeccion, marca, autor }))
+    setGuardado(resultado.error ? { ok: false, texto: `Guardada en este navegador, pero la hoja falló: ${resultado.error}` } : { ok: true, texto: `${propuesta.id} guardada en el historial${resultado.enNube ? ' y en Google Sheets' : ''}.` })
+  }
 
   const bateria = baterias.find((equipo) => equipo.id === finanzas.bateriaId)
   const cantidadBaterias = Math.max(1, Math.floor(aNumero(finanzas.bateriaCantidad) ?? 1))
@@ -155,6 +168,8 @@ export default function PropuestaSection() {
       const { doc, sinImagen } = await generarDocumento()
       doc.save(archivo)
       setDescarga({ estado: 'lista', sinImagen })
+      // Una propuesta descargada queda registrada en el historial sin tener que acordarse de guardarla.
+      await guardar()
     } catch (error) {
       setDescarga({ estado: 'error', mensaje: error.message })
     }
@@ -174,11 +189,12 @@ export default function PropuestaSection() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={nuevaPropuesta}
-              className="flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
+              onClick={guardar}
+              disabled={!propuesta.id}
+              className="flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50"
             >
-              <FilePlus2 className="size-4" aria-hidden="true" />
-              Nueva propuesta
+              <Save className="size-4" aria-hidden="true" />
+              Guardar propuesta
             </button>
             <button
               type="button"
@@ -231,6 +247,11 @@ export default function PropuestaSection() {
           <TextField label="Dirección / proyecto" value={propuesta.direccion} placeholder="Dirección del sitio" onChange={(direccion) => cambiarPropuesta({ direccion })} />
           <TextField label="Símbolo de moneda en el PDF" value={propuesta.moneda} placeholder="B/." onChange={(moneda) => cambiarPropuesta({ moneda })} />
         </div>
+        {guardado && (
+          <p role="status" className={`mt-3 rounded border px-3 py-2 text-xs ${guardado.ok ? 'border-ok/40 bg-ok/10 text-ok' : 'border-warn/40 bg-warn/10 text-warn'}`}>
+            {guardado.texto}
+          </p>
+        )}
         {descarga.estado === 'error' && (
           <p role="alert" className="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
             No se pudo generar el PDF: {descarga.mensaje}

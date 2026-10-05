@@ -1,5 +1,6 @@
-import { Database, Gauge, LayoutGrid, LineChart } from 'lucide-react'
+import { Database, Gauge, History, LayoutGrid, LineChart } from 'lucide-react'
 import EquiposSection from '../sections/EquiposSection.jsx'
+import HistorialSection from '../sections/HistorialSection.jsx'
 import ConsumoSection from '../sections/ConsumoSection.jsx'
 import DisenoSection from '../sections/DisenoSection.jsx'
 import PropuestaSection from '../sections/PropuestaSection.jsx'
@@ -33,5 +34,12 @@ export const SECTIONS = [
     description: 'Generación estimada, análisis financiero y entregable.',
     icon: LineChart,
     component: PropuestaSection,
+  },
+  {
+    id: 'historial',
+    label: 'Historial de Propuestas',
+    description: 'Propuestas guardadas para reabrir, editar o copiar, y conexión con Google Sheets.',
+    icon: History,
+    component: HistorialSection,
   },
 ]

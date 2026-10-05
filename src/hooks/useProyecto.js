@@ -71,6 +71,12 @@ const store = createStore('sds.proyecto.v1', PROYECTO_INICIAL)
 const actualizar = (seccion, cambios) => store.set((prev) => ({ ...prev, [seccion]: { ...prev[seccion], ...cambios } }))
 const reiniciar = () => store.set(PROYECTO_INICIAL)
 
+// Sustituye el proyecto entero por uno guardado (historial). Se mezcla sección por sección con el
+// estado inicial para que una propuesta antigua, sin los campos más nuevos, cargue sin romperse.
+export const reemplazarProyecto = (datos) =>
+  store.set(Object.fromEntries(Object.entries(PROYECTO_INICIAL).map(([seccion, valor]) => [seccion, { ...valor, ...datos?.[seccion] }])))
+export const limpiarProyecto = reiniciar
+
 // Lectura directa del estado actual, para efectos que no deben fiarse del valor capturado en el render.
 export const leerProyecto = store.get
 

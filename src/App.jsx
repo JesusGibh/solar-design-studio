@@ -1,12 +1,23 @@
 import { useState } from 'react'
-import { Sun } from 'lucide-react'
+import { Eraser, Sun } from 'lucide-react'
 import { SECTIONS } from './config/sections.js'
+import { limpiarProyecto } from './hooks/useProyecto.js'
+import { guardarCaptura3d } from './lib/captura3d.js'
 
 export default function App() {
   const [activeId, setActiveId] = useState(SECTIONS[0].id)
   const activeIndex = SECTIONS.findIndex((section) => section.id === activeId)
   const active = SECTIONS[activeIndex]
   const ActiveSection = active.component
+
+  // Deja todos los campos en blanco para una propuesta nueva. El catálogo de equipos y el historial
+  // no se tocan; el número siguiente se asigna al abrir la sección Propuesta.
+  const limpiar = () => {
+    if (!window.confirm('¿Limpiar todos los datos para empezar una propuesta nueva?\n\nSe borran cliente, consumo, techo trazado y finanzas del proyecto en pantalla. Si quieres conservarlo, guárdalo antes en la sección Propuesta.')) return
+    limpiarProyecto()
+    guardarCaptura3d(null)
+    setActiveId('consumo')
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -25,9 +36,20 @@ export default function App() {
               </p>
             </div>
           </div>
-          <span className="hidden rounded border border-line px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-muted sm:inline">
-            Creado por Ing. Jesús Ariza
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={limpiar}
+              title="Vaciar todos los campos para empezar una propuesta nueva"
+              className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 text-sm text-ink-muted transition-colors hover:border-danger/60 hover:text-danger"
+            >
+              <Eraser className="size-4" aria-hidden="true" />
+              Limpiar
+            </button>
+            <span className="hidden rounded border border-line px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-muted sm:inline">
+              Creado por Ing. Jesús Ariza
+            </span>
+          </div>
         </div>
 
         <nav
@@ -68,7 +90,7 @@ export default function App() {
           <h2 className="mt-1 text-xl font-semibold tracking-tight">{active.label}</h2>
           <p className="mt-1 text-sm text-ink-muted">{active.description}</p>
         </div>
-        <ActiveSection />
+        <ActiveSection irA={setActiveId} />
       </main>
 
       <footer className="border-t border-line px-4 py-2 sm:px-6">

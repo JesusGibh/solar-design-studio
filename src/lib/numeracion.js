@@ -1,21 +1,57 @@
-// Numeración correlativa de propuestas: PROP-<año>-0001, 0002… El último número se guarda en
-// localStorage de este dispositivo y la cuenta vuelve a empezar con cada año.
+import { nube, nubeActiva } from './nube.js'
+
+// Numeración correlativa de propuestas: PROP-<año>-0001, 0002… La cuenta vuelve a empezar cada año.
+// Con la hoja de Google Sheets conectada el número lo reparte la hoja, así no se repite entre
+// dispositivos; sin conexión se usa un contador guardado en este navegador.
 const CLAVE = 'sds.propuestas.ultimo'
 
-export function siguienteIdPropuesta() {
-  const anio = new Date().getFullYear()
-  let numero = 0
+function leerContador(anio) {
   try {
     const guardado = JSON.parse(localStorage.getItem(CLAVE))
-    if (guardado?.anio === anio) numero = guardado.numero
+    return guardado?.anio === anio ? guardado.numero : 0
   } catch {
-    // Sin almacenamiento o dato corrupto: se empieza en 0001.
+    return 0
   }
-  numero += 1
+}
+
+function guardarContador(anio, numero) {
   try {
     localStorage.setItem(CLAVE, JSON.stringify({ anio, numero }))
   } catch {
     // Sin almacenamiento el número no persiste, pero la propuesta se puede generar igual.
   }
+}
+
+function siguienteLocal() {
+  const anio = new Date().getFullYear()
+  const numero = leerContador(anio) + 1
+  guardarContador(anio, numero)
   return `PROP-${anio}-${String(numero).padStart(4, '0')}`
+}
+
+let enCurso = null
+
+// Reserva el siguiente número. Si ya hay una reserva pendiente devuelve la misma, para que dos
+// llamadas seguidas (React monta dos veces en desarrollo) no consuman dos números.
+export function reservarIdPropuesta() {
+  if (enCurso) return enCurso
+  const reserva = (async () => {
+    try {
+      if (!nubeActiva()) return siguienteLocal()
+      const id = await nube.siguienteId()
+      // El contador local sigue al de la hoja, por si más tarde se trabaja sin conexión.
+      const [, anio, numero] = id.match(/^PROP-(\d{4})-(\d+)$/) ?? []
+      if (anio) guardarContador(Number(anio), Math.max(Number(numero), leerContador(Number(anio))))
+      return id
+    } catch {
+      return siguienteLocal()
+    }
+  })()
+  enCurso = reserva
+  // La reserva se libera cuando termina (en un paso posterior, nunca antes de haberla guardado):
+  // si se soltara dentro de la propia función, una reserva sin espera quedaría fija para siempre.
+  reserva.finally(() => {
+    if (enCurso === reserva) enCurso = null
+  })
+  return reserva
 }
