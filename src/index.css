@@ -46,6 +46,25 @@
   }
 }
 
+/* Mapa del techo: vértices del trazo y controles de Leaflet en tono oscuro */
+.vertice-techo {
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-base);
+  box-shadow: 0 0 0 1px var(--color-accent);
+  cursor: grab;
+}
+
+.leaflet-container {
+  background: var(--color-base);
+  font-family: inherit;
+}
+
+.leaflet-container.cursor-crosshair,
+.leaflet-container.cursor-crosshair .leaflet-interactive {
+  cursor: crosshair;
+}
+
 /* Retícula tipo plano técnico para el fondo del área de trabajo */
 @utility bg-blueprint {
   background-image:

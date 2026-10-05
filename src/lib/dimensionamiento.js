@@ -141,7 +141,12 @@ function evaluarStrings({ panel, numPaneles, inversor, cantidad, tempMin }) {
   return { estado: 'ok', ...resultado }
 }
 
-function evaluarTecho({ panel, numPaneles, areaTecho }) {
+// Con el techo trazado en el mapa manda el conteo físico del empaquetado (`maxPanelesTecho`);
+// si solo hay un área escrita a mano, se estima con el 85 % útil.
+function evaluarTecho({ panel, numPaneles, areaTecho, maxPanelesTecho }) {
+  if (maxPanelesTecho != null) {
+    return { estado: numPaneles <= maxPanelesTecho ? 'ok' : 'danger', maxPaneles: maxPanelesTecho, porTrazado: true }
+  }
   const area = areaPanelM2(panel)
   if (!areaTecho || !area) return { estado: 'pendiente', sinDimensiones: Boolean(areaTecho && panel && !area) }
   const areaUtil = areaTecho * FRACCION_TECHO_UTIL
@@ -151,7 +156,7 @@ function evaluarTecho({ panel, numPaneles, areaTecho }) {
 
 // Evalúa un sistema concreto (panel × cantidad + inversor × cantidad). Lo usan ambos modos.
 // `cobertura` es generación anual / consumo anual (1 = 100 %).
-export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, tempMin, areaTecho, datosRed }) {
+export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, tempMin, areaTecho, maxPanelesTecho, datosRed }) {
   const kwp = panel && numPaneles ? (panel.potencia_wp * numPaneles) / 1000 : null
   const generacionAnualKwh = kwp ? generacionAnual(kwp, hsp, pr) : null
   const potenciaAcKw = inversor ? inversor.potencia_ac_nominal_kw * cantidad : null
@@ -166,22 +171,39 @@ export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anua
     potenciaAcKw,
     ratio: { estado: ratioValor == null ? 'pendiente' : enRango ? 'ok' : ratioValor > 1.5 || ratioValor < 0.8 ? 'danger' : 'warn', valor: ratioValor },
     strings: evaluarStrings({ panel, numPaneles, inversor, cantidad, tempMin }),
-    techo: evaluarTecho({ panel, numPaneles, areaTecho }),
+    techo: evaluarTecho({ panel, numPaneles, areaTecho, maxPanelesTecho }),
     interconexion: validarInterconexion({ red: datosRed, potenciaKw: potenciaAcKw }),
   }
 }
 
 // Modo automático: del consumo anual y la cobertura objetivo al sistema óptimo.
 // Devuelve null si falta el consumo; `sinPanel` si la marca pedida no tiene paneles.
-export function dimensionarAuto({ anualKwh, cobertura, hsp, pr, tempMin, areaTecho, datosRed, paneles, inversores, marcaPanel = '', marcaInversor = '' }) {
+// Si lo requerido no cabe en el techo (`excedeTecho`), solo se recorta al máximo físico cuando
+// el usuario lo pide (`ajustarATecho`); mientras tanto se avisa y se conserva lo requerido.
+export function dimensionarAuto({
+  anualKwh,
+  cobertura,
+  hsp,
+  pr,
+  tempMin,
+  areaTecho,
+  maxPanelesTecho,
+  ajustarATecho = false,
+  datosRed,
+  paneles,
+  inversores,
+  marcaPanel = '',
+  marcaInversor = '',
+}) {
   if (!anualKwh) return null
   const panel = elegirPanel(paneles, marcaPanel)
   if (!panel) return { sinPanel: true }
 
   const kwpRequerido = potenciaDcRequerida(anualKwh, cobertura, hsp, pr)
   const numRequeridos = Math.ceil((kwpRequerido * 1000) / panel.potencia_wp - 1e-9)
-  const maximoTecho = maxPanelesEnTecho(areaTecho, panel)
-  const limitadoPorTecho = maximoTecho != null && numRequeridos > maximoTecho
+  const maximoTecho = maxPanelesTecho ?? maxPanelesEnTecho(areaTecho, panel)
+  const excedeTecho = maximoTecho != null && numRequeridos > maximoTecho
+  const limitadoPorTecho = excedeTecho && ajustarATecho
   const numPaneles = limitadoPorTecho ? maximoTecho : numRequeridos
   const kwp = (panel.potencia_wp * numPaneles) / 1000
 
@@ -194,10 +216,24 @@ export function dimensionarAuto({ anualKwh, cobertura, hsp, pr, tempMin, areaTec
     numPaneles,
     numRequeridos,
     kwpRequerido,
+    maximoTecho,
+    excedeTecho,
     limitadoPorTecho,
     inversor: eleccion.inversor,
     cantidad: eleccion.cantidad,
     avisoInversor: eleccion.motivo,
-    evaluacion: evaluarSistema({ panel, numPaneles, inversor: eleccion.inversor, cantidad: eleccion.cantidad, anualKwh, hsp, pr, tempMin, areaTecho, datosRed }),
+    evaluacion: evaluarSistema({
+      panel,
+      numPaneles,
+      inversor: eleccion.inversor,
+      cantidad: eleccion.cantidad,
+      anualKwh,
+      hsp,
+      pr,
+      tempMin,
+      areaTecho,
+      maxPanelesTecho,
+      datosRed,
+    }),
   }
 }

@@ -10,6 +10,8 @@
     "fichas": "node scripts/procesar_fichas.js"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.52.0",
     "pdfjs-dist": "^6.4.299",
     "react": "^19.3.0",

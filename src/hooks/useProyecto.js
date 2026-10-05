@@ -21,14 +21,27 @@ export const PROYECTO_INICIAL = {
     cobertura: '100', // % del consumo anual que debe cubrir el sistema
     pr: '0.8',
     tempMin: '10',
-    areaTecho: '',
+    areaTecho: '', // m² escritos a mano; se usa solo si no hay techo trazado
+    ajustarATecho: false, // recortar el cálculo automático a lo que cabe en el techo
     marcaPanel: '', // '' = cualquiera / óptimo
     marcaInversor: '',
     panelId: '',
     numPaneles: '',
   },
+  // Techo trazado sobre el mapa satelital.
+  techo: {
+    vertices: [], // [[lat, lng], …]
+    vista: null, // { centro: [lat, lng], zoom } del mapa, para reabrirlo en el mismo sitio
+    retranqueo: '0.5', // m libres desde los bordes
+    orientacion: 'vertical', // 'vertical' (portrait) | 'horizontal' (landscape)
+    inclinacion: '10', // °
+    azimut: '', // ° ; vacío = estimado a partir del trazo
+  },
+  propuesta: { id: '', empresa: 'Solar Design Studio', cliente: '', direccion: '', asesor: '' },
   finanzas: {
     precioWp: '', // $/Wp instalado
+    bateriaId: '', // batería del catálogo incluida en la propuesta
+    bateriaCantidad: '1',
     costoBaterias: '', // costo adicional por almacenamiento
     inflacion: '3', // % anual del costo de la energía
     degradacion: '0.5', // % anual del módulo
@@ -40,6 +53,9 @@ const store = createStore('sds.proyecto.v1', PROYECTO_INICIAL)
 
 const actualizar = (seccion, cambios) => store.set((prev) => ({ ...prev, [seccion]: { ...prev[seccion], ...cambios } }))
 const reiniciar = () => store.set(PROYECTO_INICIAL)
+
+// Lectura directa del estado actual, para efectos que no deben fiarse del valor capturado en el render.
+export const leerProyecto = store.get
 
 export function useProyecto() {
   const proyecto = useSyncExternalStore(store.subscribe, store.get)

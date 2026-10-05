@@ -72,8 +72,23 @@ function Alerta({ children }) {
 // Dimensionador del sistema FV: conmutador de modo, parámetros, selección de equipos y resumen técnico
 // con semáforos. Lee y escribe el estado compartido del proyecto, así que se puede montar en varios módulos.
 export default function Dimensionador() {
-  const { esAuto, cambiarModo, parametros, red, auto, sistema, paneles, inversoresCompatibles, marcasPanel, marcasInversor, proyecto, actualizar } =
-    useDimensionamiento()
+  const {
+    esAuto,
+    cambiarModo,
+    parametros,
+    red,
+    auto,
+    sistema,
+    maximoTecho,
+    excesoTecho,
+    ajustarAlTecho,
+    paneles,
+    inversoresCompatibles,
+    marcasPanel,
+    marcasInversor,
+    proyecto,
+    actualizar,
+  } = useDimensionamiento()
   const { dimensionamiento, inversor: seleccion } = proyecto
   const cambiar = (cambios) => actualizar('dimensionamiento', cambios)
   // Una marca de inversor que no existe para la red actual equivale a "cualquiera".
@@ -136,10 +151,13 @@ export default function Dimensionador() {
                   {parametros.hsp} × {parametros.pr}) → {auto.numRequeridos} paneles.
                 </p>
                 {auto.limitadoPorTecho && (
-                  <Alerta>
-                    Los {auto.numRequeridos} paneles requeridos no caben en el techo. Se ajustó al máximo físico de {auto.numPaneles}, que
-                    cubre el {fmt(evaluacion.cobertura * 100, 0)} % del consumo.
-                  </Alerta>
+                  <p className="rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
+                    Ajustado al máximo del techo: {auto.numPaneles} de los {auto.numRequeridos} paneles requeridos, que cubren el{' '}
+                    {fmt(evaluacion.cobertura * 100, 0)} % del consumo.{' '}
+                    <button type="button" onClick={() => cambiar({ ajustarATecho: false })} className="underline hover:text-ink">
+                      Quitar ajuste
+                    </button>
+                  </p>
                 )}
                 {auto.avisoInversor && <Alerta>{auto.avisoInversor}</Alerta>}
               </>
@@ -174,6 +192,21 @@ export default function Dimensionador() {
                 onChange={(cantidad) => actualizar('inversor', { cantidad })}
               />
             </div>
+          </div>
+        )}
+
+        {excesoTecho > 0 && !(esAuto && auto?.limitadoPorTecho) && (
+          <div className="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+            <p>
+              El techo admite {maximoTecho} paneles y el sistema necesita {maximoTecho + excesoTecho}: sobran {excesoTecho}.
+            </p>
+            <button
+              type="button"
+              onClick={ajustarAlTecho}
+              className="mt-2 rounded border border-danger/50 px-2.5 py-1 font-medium text-ink transition-colors hover:bg-danger/20"
+            >
+              Ajustar al máximo del techo ({maximoTecho} paneles)
+            </button>
           </div>
         )}
       </Panel>
@@ -216,7 +249,9 @@ export default function Dimensionador() {
                 ? techo.sinDimensiones
                   ? 'La ficha del panel no trae dimensiones: no se puede verificar.'
                   : 'Ingresa el área de techo en el módulo de Diseño.'
-                : `${fmt(techo.areaNecesaria)} m² de paneles frente a ${fmt(techo.areaUtil)} m² útiles (${FRACCION_TECHO_UTIL * 100} % del techo). Caben hasta ${techo.maxPaneles} paneles.`}
+                : techo.porTrazado
+                  ? `${sistema.numPaneles} paneles frente a los ${techo.maxPaneles} que caben en el techo trazado.`
+                  : `${fmt(techo.areaNecesaria)} m² de paneles frente a ${fmt(techo.areaUtil)} m² útiles (${FRACCION_TECHO_UTIL * 100} % del techo). Caben hasta ${techo.maxPaneles} paneles.`}
             </Check>
 
             <Check estado={interconexion.acometida.estado} titulo="Interruptor principal (IP)">
