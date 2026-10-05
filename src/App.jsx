@@ -26,7 +26,7 @@ export default function App() {
             </div>
           </div>
           <span className="hidden rounded border border-line px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-muted sm:inline">
-            Proyecto sin título
+            Creado por Ing. Jesús Ariza
           </span>
         </div>
 
