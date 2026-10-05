@@ -24,7 +24,13 @@ export function tiposDeRed(inversor) {
   return Array.isArray(valor) ? valor : String(valor).split(/\s*;\s*/)
 }
 
-export const esCompatible = (inversor, red) => tiposDeRed(inversor).includes(red.tipoRed)
+// Compatibilidad estricta: la ficha debe declarar exactamente esa red. Los equipos sin tensión declarada
+// quedan fuera, y uno monofásico / de fase dividida que también liste 208 V no cuenta como trifásico.
+export function esCompatible(inversor, red) {
+  const tipos = tiposDeRed(inversor)
+  if (!tipos.includes(red.tipoRed)) return false
+  return red.fases === 1 || !tipos.some((tipo) => tipo.startsWith('Monofasico'))
+}
 
 const FACTOR_CONTINUO = 1.25 // la salida del inversor se trata como carga continua (125 %)
 

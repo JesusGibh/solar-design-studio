@@ -190,7 +190,7 @@ export default function EquiposSection() {
             <span className="ml-3 normal-case tracking-normal text-ink-dim">
               {fuente
                 ? `Google Sheets · cargado el ${new Date(fuente.fecha).toLocaleString('es')}`
-                : 'Catálogo local (fichas técnicas + referencia)'}
+                : 'Catálogo extraído de las fichas técnicas'}
             </span>
           </p>
           <label className="relative">
@@ -239,6 +239,14 @@ export default function EquiposSection() {
                       }`}
                     >
                       <Cell field={field} equipo={equipo} />
+                      {field.key === 'modelo' && equipo.ocr && (
+                        <span
+                          title="Leído por OCR de un PDF escaneado: verificar"
+                          className="ml-2 rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn"
+                        >
+                          OCR
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -258,8 +266,8 @@ export default function EquiposSection() {
       </section>
 
       <p className="text-xs text-ink-dim">
-        Los valores se extraen automáticamente de las fichas técnicas o son de referencia (STC). Verifícalos contra la
-        ficha vigente del fabricante antes de usarlos en un diseño.
+        Los valores se extraen automáticamente de las fichas técnicas. Los marcados OCR vienen de PDF escaneados y
+        pueden traer dígitos mal leídos: verifícalos contra la ficha antes de usarlos en un diseño.
       </p>
 
       {modalOpen && (

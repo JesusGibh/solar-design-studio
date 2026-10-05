@@ -12,7 +12,17 @@ export const PROYECTO_INICIAL = {
     costoMensual: '',
     meses: Array.from({ length: 12 }, () => ({ kwh: '', costo: '' })),
   },
+  // Inversor y panel elegidos en el modo personalizado.
   inversor: { id: '', cantidad: '1' },
+  dimensionamiento: {
+    modo: 'auto', // 'auto' | 'manual'
+    hsp: '4.2',
+    pr: '0.8',
+    tempMin: '10',
+    areaTecho: '',
+    panelId: '',
+    numPaneles: '',
+  },
 }
 
 const store = createStore('sds.proyecto.v1', PROYECTO_INICIAL)

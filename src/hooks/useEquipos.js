@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CATEGORIES } from '../config/equipos.js'
 import fichas from '../data/catalogo_equipos.json'
-import { MOCK_EQUIPOS } from '../data/mockEquipos.js'
-import { agregarRegistros, unirRegistros } from '../lib/fichas/registros.js'
+import { agregarRegistros } from '../lib/fichas/registros.js'
 import { fetchEquipos } from '../lib/sheets.js'
 
 const STORAGE_KEY = 'sds.equipos.v2'
 
-// Catálogo base: lo extraído de las fichas técnicas más los equipos de referencia.
+// Catálogo base: únicamente lo extraído de las fichas técnicas (scripts/procesar_fichas.js).
 const BASE = Object.fromEntries(
-  CATEGORIES.map(({ id, categoria }) => [
-    id,
-    unirRegistros([...fichas.filter((registro) => registro.categoria === categoria), ...MOCK_EQUIPOS[id]]),
-  ]),
+  CATEGORIES.map(({ id, categoria }) => [id, fichas.filter((registro) => registro.categoria === categoria)]),
 )
 
 const VACIO = { reemplazos: {}, agregados: [], fuentes: {} }
