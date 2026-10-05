@@ -35,36 +35,25 @@ export function esCompatible(inversor, red) {
 const FACTOR_CONTINUO = 1.25 // la salida del inversor se trata como carga continua (125 %)
 
 // Validaciones de interconexión. Cada resultado trae `estado`: 'ok' | 'warn' | 'danger' | 'pendiente'.
-//   regla120: interruptor principal + 125 % de la corriente solar ≤ 120 % de la barra (NEC 705.12, lado carga)
-//   acometida: 125 % de la corriente solar no puede superar el interruptor principal
+//   acometida: 125 % de la corriente solar no puede superar el interruptor principal (IP)
 //   transformador: potencia AC del sistema frente a los kVA del transformador
 export function validarInterconexion({ red: datosRed, potenciaKw }) {
   const red = getRed(datosRed.tension)
   const interruptor = aNumero(datosRed.interruptorA)
-  const barra = aNumero(datosRed.barraA) ?? interruptor
   const transformador = aNumero(datosRed.transformadorKva)
   const corrienteSolar = potenciaKw ? corrienteAC(potenciaKw, red) : null
-  const retroalimentacion = corrienteSolar && corrienteSolar * FACTOR_CONTINUO
+  const corrienteContinua = corrienteSolar && corrienteSolar * FACTOR_CONTINUO
 
   const pendiente = { estado: 'pendiente' }
-  const regla120 =
-    interruptor && retroalimentacion
-      ? (() => {
-          const permitido = barra * 1.2 - interruptor
-          return {
-            estado: retroalimentacion <= permitido ? 'ok' : 'danger',
-            barra,
-            permitido,
-            retroalimentacion,
-            // Potencia AC máxima que cabe en la barra por el lado de carga.
-            potenciaMaxKw: Math.max(0, potenciaKva(permitido / FACTOR_CONTINUO, red)),
-          }
-        })()
-      : pendiente
-
   const acometida =
-    interruptor && retroalimentacion
-      ? { estado: retroalimentacion <= interruptor ? 'ok' : 'danger', interruptor, retroalimentacion }
+    interruptor && corrienteContinua
+      ? {
+          estado: corrienteContinua <= interruptor ? 'ok' : 'danger',
+          interruptor,
+          corrienteContinua,
+          // Potencia AC máxima que admite el interruptor principal.
+          potenciaMaxKw: potenciaKva(interruptor / FACTOR_CONTINUO, red),
+        }
       : pendiente
 
   const uso = transformador && potenciaKw ? potenciaKw / transformador : null
@@ -74,7 +63,6 @@ export function validarInterconexion({ red: datosRed, potenciaKw }) {
     red,
     corrienteSolar,
     capacidadAcometidaKva: interruptor ? potenciaKva(interruptor, red) : null,
-    regla120,
     acometida,
     transformador: transformadorCheck,
   }

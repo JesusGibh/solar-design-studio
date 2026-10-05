@@ -1,6 +1,5 @@
 import { Calculator, Gauge } from 'lucide-react'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
-import { aNumero } from '../lib/consumo.js'
 import { FRACCION_TECHO_UTIL, RATIO_DC_AC } from '../lib/dimensionamiento.js'
 import Panel from './Panel.jsx'
 import { Check, NumberField, Stat, Toggle, fmt, inputClass, labelClass } from './campos.jsx'
@@ -40,6 +39,23 @@ function SelectEquipo({ label, value, onChange, equipos, clave, unidad, vacio })
   )
 }
 
+function SelectMarca({ label, value, onChange, marcas }) {
+  return (
+    <label className="block">
+      <span className={labelClass}>{label}</span>
+      {/* Si la marca guardada ya no existe para esta red, el selector vuelve a "Cualquiera". */}
+      <select value={marcas.includes(value) ? value : ''} onChange={(event) => onChange(event.target.value)} className={`${inputClass} font-sans`}>
+        <option value="">Cualquiera / Óptimo</option>
+        {marcas.map((marca) => (
+          <option key={marca} value={marca}>
+            {marca}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function Linea({ titulo, children }) {
   return (
     <div className="rounded border border-line bg-base px-3 py-2">
@@ -49,26 +65,30 @@ function Linea({ titulo, children }) {
   )
 }
 
+function Alerta({ children }) {
+  return <p className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{children}</p>
+}
+
 // Dimensionador del sistema FV: conmutador de modo, parámetros, selección de equipos y resumen técnico
 // con semáforos. Lee y escribe el estado compartido del proyecto, así que se puede montar en varios módulos.
 export default function Dimensionador() {
-  const { esAuto, cambiarModo, parametros, red, auto, sistema, paneles, inversoresCompatibles, proyecto, actualizar } =
+  const { esAuto, cambiarModo, parametros, red, auto, sistema, paneles, inversoresCompatibles, marcasPanel, marcasInversor, proyecto, actualizar } =
     useDimensionamiento()
-  const { dimensionamiento, inversor: seleccion, red: datosRed } = proyecto
+  const { dimensionamiento, inversor: seleccion } = proyecto
   const cambiar = (cambios) => actualizar('dimensionamiento', cambios)
+  // Una marca de inversor que no existe para la red actual equivale a "cualquiera".
+  const marcaInversor = marcasInversor.includes(dimensionamiento.marcaInversor) ? dimensionamiento.marcaInversor : ''
 
   const evaluacion = sistema?.evaluacion
   const { ratio, strings, techo, interconexion } = evaluacion ?? {}
-  const interruptor = aNumero(datosRed.interruptorA)
 
   return (
     <div className="grid gap-4">
       <Panel title="Dimensionamiento del sistema" icon={Calculator}>
         <Toggle value={esAuto ? 'auto' : 'manual'} options={MODOS} onChange={cambiarModo} />
 
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <NumberField label="HSP" unit="h/día" value={dimensionamiento.hsp} placeholder="4.2" onChange={(hsp) => cambiar({ hsp })} />
-          <NumberField label="PR" value={dimensionamiento.pr} placeholder="0.8" onChange={(pr) => cambiar({ pr })} />
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <NumberField label="Performance Ratio" value={dimensionamiento.pr} placeholder="0.8" onChange={(pr) => cambiar({ pr })} />
           <NumberField
             label="Temp. mínima"
             unit="°C"
@@ -81,16 +101,30 @@ export default function Dimensionador() {
 
         {esAuto ? (
           <div className="mt-4 grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <SelectMarca label="Marca de panel" value={dimensionamiento.marcaPanel} marcas={marcasPanel} onChange={(marcaPanel) => cambiar({ marcaPanel })} />
+              <SelectMarca
+                label="Marca de inversor"
+                value={marcaInversor}
+                marcas={marcasInversor}
+                onChange={(valor) => cambiar({ marcaInversor: valor })}
+              />
+            </div>
+
             {!auto ? (
               <p className="rounded border border-line bg-base px-3 py-2 text-sm text-ink-muted">
+                Ingresa el consumo en el módulo de Consumo para calcular el sistema óptimo.
+              </p>
+            ) : auto.sinPanel ? (
+              <Alerta>
                 {paneles.length === 0
                   ? 'El catálogo no tiene paneles: sube una ficha técnica en el módulo de Equipos.'
-                  : 'Ingresa el consumo mensual en el módulo de Consumo para calcular el sistema óptimo.'}
-              </p>
+                  : `No hay paneles de ${dimensionamiento.marcaPanel} en el catálogo.`}
+              </Alerta>
             ) : (
               <>
-                <Linea titulo={`Panel óptimo · ${auto.numPaneles} unidades`}>
-                  {auto.panel.marca} {auto.panel.modelo} · {auto.panel.potencia_wp} Wp
+                <Linea titulo={`Panel · ${auto.numPaneles} unidades`}>
+                  {auto.panel.marca} {auto.panel.modelo} · {auto.panel.potencia_wp} Wp{auto.panel.ocr ? ' · leído por OCR, verificar' : ''}
                 </Linea>
                 <Linea titulo={auto.inversor ? `Inversor · ${auto.cantidad} unidad(es)` : 'Inversor'}>
                   {auto.inversor
@@ -98,18 +132,16 @@ export default function Dimensionador() {
                     : 'Sin inversor que cumpla'}
                 </Linea>
                 <p className="text-xs text-ink-dim">
-                  Requerido: {fmt(auto.kwpRequerido, 2)} kWp = {fmt(parametros.consumoKwh, 0)} kWh ÷ (30 × {parametros.hsp} ×{' '}
-                  {parametros.pr}) → {auto.numRequeridos} paneles.
+                  Requerido: {fmt(auto.kwpRequerido, 2)} kWp = {fmt(parametros.anualKwh, 0)} kWh/año × {parametros.cobertura} % ÷ (365 ×{' '}
+                  {parametros.hsp} × {parametros.pr}) → {auto.numRequeridos} paneles.
                 </p>
                 {auto.limitadoPorTecho && (
-                  <p className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
-                    Los {auto.numRequeridos} paneles requeridos no caben en el techo. Se ajustó al máximo físico de{' '}
-                    {auto.numPaneles}, que cubre el {fmt(evaluacion.cobertura * 100, 0)} % del consumo.
-                  </p>
+                  <Alerta>
+                    Los {auto.numRequeridos} paneles requeridos no caben en el techo. Se ajustó al máximo físico de {auto.numPaneles}, que
+                    cubre el {fmt(evaluacion.cobertura * 100, 0)} % del consumo.
+                  </Alerta>
                 )}
-                {auto.avisoInversor && (
-                  <p className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{auto.avisoInversor}</p>
-                )}
+                {auto.avisoInversor && <Alerta>{auto.avisoInversor}</Alerta>}
               </>
             )}
           </div>
@@ -148,9 +180,9 @@ export default function Dimensionador() {
 
       <Panel title="Resumen técnico" icon={Gauge}>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Potencia DC" value={fmt(evaluacion?.kwp, 2)} unit="kWp" />
+          <Stat label={`Potencia DC${sistema?.numPaneles ? ` · ${sistema.numPaneles} paneles` : ''}`} value={fmt(evaluacion?.kwp, 2)} unit="kWp" />
           <Stat label="Potencia AC" value={fmt(evaluacion?.potenciaAcKw, 2)} unit="kW" />
-          <Stat label="Generación" value={fmt(evaluacion?.generacionKwh, 0)} unit="kWh/mes" />
+          <Stat label="Generación" value={fmt(evaluacion?.generacionMensualKwh, 0)} unit="kWh/mes" />
           <Stat label="Cobertura" value={evaluacion?.cobertura == null ? '—' : fmt(evaluacion.cobertura * 100, 0)} unit="%" />
         </div>
 
@@ -187,25 +219,14 @@ export default function Dimensionador() {
                 : `${fmt(techo.areaNecesaria)} m² de paneles frente a ${fmt(techo.areaUtil)} m² útiles (${FRACCION_TECHO_UTIL * 100} % del techo). Caben hasta ${techo.maxPaneles} paneles.`}
             </Check>
 
-            <Check estado={interconexion.regla120.estado} titulo="Regla del 120 % de la barra">
-              {interconexion.regla120.estado === 'pendiente' ? (
-                'Ingresa el interruptor principal y define el inversor.'
-              ) : (
-                <>
-                  Interruptor {fmt(interruptor, 0)} A + solar {fmt(interconexion.regla120.retroalimentacion)} A (125 %) ={' '}
-                  {fmt(interruptor + interconexion.regla120.retroalimentacion)} A frente a {fmt(interconexion.regla120.barra * 1.2)} A
-                  permitidos.{' '}
-                  {interconexion.regla120.estado === 'danger'
-                    ? `Por el lado de carga caben hasta ${fmt(interconexion.regla120.potenciaMaxKw)} kW AC; evalúa conexión del lado de línea o reducir el interruptor principal.`
-                    : `Margen para hasta ${fmt(interconexion.regla120.potenciaMaxKw)} kW AC.`}
-                </>
-              )}
-            </Check>
-
             <Check estado={interconexion.acometida.estado} titulo="Interruptor principal (IP)">
               {interconexion.acometida.estado === 'pendiente'
                 ? 'Ingresa el interruptor principal y define el inversor.'
-                : `Corriente solar continua ${fmt(interconexion.acometida.retroalimentacion)} A frente a un IP de ${fmt(interruptor, 0)} A (${fmt(interconexion.capacidadAcometidaKva)} kVA).${interconexion.acometida.estado === 'danger' ? ' El sistema supera la acometida.' : ''}`}
+                : `Corriente solar ${fmt(interconexion.corrienteSolar)} A × 125 % = ${fmt(interconexion.acometida.corrienteContinua)} A frente a un IP de ${fmt(interconexion.acometida.interruptor, 0)} A. ${
+                    interconexion.acometida.estado === 'danger'
+                      ? `Supera la acometida: admite hasta ${fmt(interconexion.acometida.potenciaMaxKw)} kW AC.`
+                      : `Admite hasta ${fmt(interconexion.acometida.potenciaMaxKw)} kW AC.`
+                  }`}
             </Check>
 
             <Check estado={interconexion.transformador.estado} titulo="Transformador">
@@ -222,7 +243,7 @@ export default function Dimensionador() {
           </div>
         )}
         <p className="mt-3 text-xs text-ink-dim">
-          Generación = kWp × HSP × PR × 30. Corriente AC a {red.voltaje} V con factor de potencia 1. Verificación
+          Generación anual = kWp × HSP × PR × 365. Corriente AC a {red.voltaje} V con factor de potencia 1. Verificación
           preliminar; no sustituye el estudio de interconexión.
         </p>
       </Panel>

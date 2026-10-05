@@ -3,13 +3,14 @@ import { createStore } from '../lib/store.js'
 
 // Estado del proyecto compartido entre módulos (Consumo, Diseño, Propuesta) y guardado en localStorage.
 // Los valores numéricos se guardan tal como se escriben en el formulario ('' = sin dato);
-// para calcular usa los helpers de lib/consumo.js y lib/electrico.js, que ya los convierten.
+// para calcular usa los helpers de lib/ (consumo, electrico, dimensionamiento, finanzas), que ya los convierten.
 export const PROYECTO_INICIAL = {
-  red: { tension: 'mono_120_240', interruptorA: '', barraA: '', transformadorKva: '' },
+  red: { tension: 'mono_120_240', interruptorA: '', transformadorKva: '' },
   consumo: {
-    modo: 'rapido', // 'rapido' | 'detallado'
-    promedioKwh: '',
-    costoMensual: '',
+    modo: 'mensual', // 'mensual' | 'anual' | 'detallado'
+    promedioKwh: '', // kWh/mes (modo mensual)
+    anualKwh: '', // kWh/año (modo anual)
+    tarifa: '', // $/kWh que paga el cliente
     meses: Array.from({ length: 12 }, () => ({ kwh: '', costo: '' })),
   },
   // Inversor y panel elegidos en el modo personalizado.
@@ -17,11 +18,21 @@ export const PROYECTO_INICIAL = {
   dimensionamiento: {
     modo: 'auto', // 'auto' | 'manual'
     hsp: '4.2',
+    cobertura: '100', // % del consumo anual que debe cubrir el sistema
     pr: '0.8',
     tempMin: '10',
     areaTecho: '',
+    marcaPanel: '', // '' = cualquiera / óptimo
+    marcaInversor: '',
     panelId: '',
     numPaneles: '',
+  },
+  finanzas: {
+    precioWp: '', // $/Wp instalado
+    costoBaterias: '', // costo adicional por almacenamiento
+    inflacion: '3', // % anual del costo de la energía
+    degradacion: '0.5', // % anual del módulo
+    factorCo2: '0.5', // kg CO₂ por kWh
   },
 }
 

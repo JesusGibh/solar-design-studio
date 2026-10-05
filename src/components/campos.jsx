@@ -24,7 +24,7 @@ export function NumberField({ label, unit, value, onChange, options, hint, place
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={`${inputClass} ${unit ? 'pr-12' : ''}`}
+          className={`${inputClass} ${unit ? (unit.length > 3 ? 'pr-20' : 'pr-12') : ''}`}
         />
         {unit && (
           <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-ink-dim">

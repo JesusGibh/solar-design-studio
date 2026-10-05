@@ -20,6 +20,10 @@
   --color-ok: #34d399;
   --color-warn: #fb923c;
   --color-danger: #f87171;
+
+  /* Series de las gráficas: par validado para daltonismo y contraste sobre el panel oscuro */
+  --color-serie-1: #3987e5;
+  --color-serie-2: #d95926;
 }
 
 @layer base {
