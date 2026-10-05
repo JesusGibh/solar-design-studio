@@ -34,8 +34,11 @@ export default function DisenoSection() {
           <Vista3D
             plano={techo.plano}
             usados={usados}
+            kwp={(usados * (panel?.potencia_wp ?? 0)) / 1000}
             inclinacion={Math.min(60, Math.max(0, Number(datos.inclinacion) || 0))}
             azimut={techo.azimut}
+            altura={Math.min(40, Math.max(2, Number(datos.altura) || 5))}
+            capa={datos.fuenteMapa}
             onClose={() => setVista3d(false)}
           />
         </Suspense>
@@ -96,7 +99,7 @@ export default function DisenoSection() {
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-ink-dim">Ábrela y pulsa «Capturar vista 3D» para incluirla en la propuesta.</p>
+              <p className="text-xs text-ink-dim">Ábrela y pulsa «Capturar Render 3D» para llevarla a la portada de la propuesta.</p>
             )}
           </div>
           {excesoTecho > 0 && (
@@ -182,6 +185,15 @@ export default function DisenoSection() {
               placeholder="10"
               hint="Acorta en planta el lado del panel que sube por la pendiente."
               onChange={(inclinacion) => cambiar({ inclinacion })}
+            />
+            <NumberField
+              label="Altura del edificio"
+              unit="m"
+              value={datos.altura}
+              options={[4, 5, 6, 8]}
+              placeholder="5"
+              hint="Del suelo al borde bajo del techo; solo afecta a la vista 3D."
+              onChange={(altura) => cambiar({ altura })}
             />
           </div>
 

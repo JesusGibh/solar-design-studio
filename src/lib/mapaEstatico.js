@@ -17,6 +17,39 @@ function cargar(src) {
   })
 }
 
+// Mosaico satelital cuadrado centrado en un punto, para texturizar el terreno de la vista 3D.
+// Devuelve { canvas, metros } (lado real que cubre la imagen) o null si no se pudo cargar ninguna tesela.
+//   metrosMinimos: lado mínimo que debe cubrir · px: lado de la imagen en píxeles
+export async function componerTerreno({ centro, metrosMinimos, capa, px = 2048 }) {
+  const fuente = fuenteDe(capa)
+  const metrosPorPixel = (z) => (156543.03392 * Math.cos((centro[0] * Math.PI) / 180)) / 2 ** z
+  // El mayor zoom con imagen real que todavía cubre el lado pedido.
+  let zoom = await fuente.zoomNativo(centro[0], centro[1])
+  while (zoom > 3 && metrosPorPixel(zoom) * px < metrosMinimos) zoom--
+
+  const medio = aMundo(centro, zoom)
+  const origen = { x: medio.x - px / 2, y: medio.y - px / 2 }
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = px
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#6b7566'
+  ctx.fillRect(0, 0, px, px)
+
+  const cargas = []
+  for (let tx = Math.floor(origen.x / TESELA); tx * TESELA < origen.x + px; tx++) {
+    for (let ty = Math.floor(origen.y / TESELA); ty * TESELA < origen.y + px; ty++) {
+      cargas.push(
+        cargar(fuente.url(zoom, tx, ty)).then((imagen) => {
+          if (imagen) ctx.drawImage(imagen, tx * TESELA - origen.x, ty * TESELA - origen.y)
+          return Boolean(imagen)
+        }),
+      )
+    }
+  }
+  const cargadas = await Promise.all(cargas)
+  return cargadas.some(Boolean) ? { canvas, metros: metrosPorPixel(zoom) * px } : null
+}
+
 // Devuelve un data URL JPEG, o null si no hay techo trazado o el navegador no dejó exportar la imagen.
 //   usados: cuántos de los rectángulos pertenecen al sistema (los demás no se dibujan)
 //   capa: fuente de imágenes ('esri' | 'google'), la misma que se ve en el mapa

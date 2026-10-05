@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { BarChart3, Download, FilePlus2, FileText, LoaderCircle, Presentation, TrendingUp, Wallet } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import VistaPreviaPropuesta from '../components/VistaPreviaPropuesta.jsx'
-import { NumberField, Stat, fmt, inputClass, labelClass } from '../components/campos.jsx'
+import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
 import { leerProyecto } from '../hooks/useProyecto.js'
+import { AUTHORS, AUTHOR_POR_DEFECTO, getAuthor } from '../config/authors.js'
+import { BRANDS, BRAND_POR_DEFECTO, getBrand } from '../config/brands.js'
 import { useCaptura3d } from '../lib/captura3d.js'
+import { cargarLogo } from '../lib/marca.js'
 import { aNumero } from '../lib/consumo.js'
 import { DEFECTOS_FINANZAS, proyectar } from '../lib/finanzas.js'
 import { siguienteIdPropuesta } from '../lib/numeracion.js'
@@ -52,6 +55,8 @@ export default function PropuestaSection() {
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
   const captura = useCaptura3d()
+  const marca = getBrand(propuesta.marca)
+  const autor = getAuthor(propuesta.autor)
   const evaluacion = sistema?.evaluacion
   const cambiar = (cambios) => actualizar('finanzas', cambios)
   const cambiarPropuesta = (cambios) => actualizar('propuesta', cambios)
@@ -94,26 +99,30 @@ export default function PropuestaSection() {
   // Compone la imagen satelital y arma el PDF de 3 hojas. Lo usan la vista previa y la descarga, así
   // que ambas muestran exactamente el mismo documento. Las librerías se cargan aquí, bajo demanda.
   const generarDocumento = async () => {
-    const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }] = await Promise.all([
+    const [{ jsPDF }, { construirPropuestaPdf }, { capturarTecho }, logo] = await Promise.all([
       import('jspdf'),
       import('../lib/propuestaPdf.js'),
       import('../lib/mapaEstatico.js'),
+      cargarLogo(marca.logoUrl),
     ])
-    // Junto a la captura 3D el satélite va en una columna estrecha; solo, a todo el ancho.
-    // Las medidas en píxeles siguen la proporción del hueco que le reserva la hoja 1 del PDF.
-    const imagenTecho = techo
-      ? await capturarTecho({
-          vertices: proyecto.techo.vertices,
-          rectangulos: techo.rectangulos,
-          usados: sistema.numPaneles,
-          capa: proyecto.techo.fuenteMapa,
-          ...(captura ? { ancho: 610, alto: 700 } : { ancho: 1200, alto: 566 }),
-        })
-      : null
+    // La portada lleva el render 3D capturado en el visor; sin él, la vista satelital del arreglo.
+    const imagenTecho =
+      techo && !captura
+        ? await capturarTecho({
+            vertices: proyecto.techo.vertices,
+            rectangulos: techo.rectangulos,
+            usados: sistema.numPaneles,
+            capa: proyecto.techo.fuenteMapa,
+            ancho: 1200,
+            alto: 566,
+          })
+        : null
     return {
-      sinImagen: Boolean(techo) && !imagenTecho,
+      sinImagen: Boolean(techo) && !captura && !imagenTecho,
       doc: construirPropuestaPdf(jsPDF, {
         imagen3d: captura?.imagen ?? null,
+        marca: { ...marca, logo },
+        autor,
         propuesta: { ...propuesta, fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) },
         imagenTecho,
         sistema,
@@ -181,15 +190,35 @@ export default function PropuestaSection() {
               ) : (
                 <Download className="size-4" aria-hidden="true" />
               )}
-              {descarga.estado === 'generando' ? 'Generando PDF…' : 'Descargar PDF Oficial'}
+              {descarga.estado === 'generando' ? 'Generando PDF…' : 'Descargar PDF'}
             </button>
           </div>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <TextField label="Empresa (membrete)" value={propuesta.empresa} placeholder="Solar Design Studio" onChange={(empresa) => cambiarPropuesta({ empresa })} />
+          <fieldset>
+            <legend className={labelClass}>Marca de la cotización</legend>
+            <Toggle
+              value={propuesta.marca in BRANDS ? propuesta.marca : BRAND_POR_DEFECTO}
+              options={Object.entries(BRANDS).map(([id, item]) => [id, item.nombre])}
+              onChange={(valor) => cambiarPropuesta({ marca: valor })}
+            />
+          </fieldset>
+          <label className="block">
+            <span className={labelClass}>Autor firmante</span>
+            <select
+              value={propuesta.autor in AUTHORS ? propuesta.autor : AUTHOR_POR_DEFECTO}
+              onChange={(event) => cambiarPropuesta({ autor: event.target.value })}
+              className={campoTexto}
+            >
+              {Object.entries(AUTHORS).map(([id, item]) => (
+                <option key={id} value={id}>
+                  {item.nombre} · {item.cargo}
+                </option>
+              ))}
+            </select>
+          </label>
           <TextField label="Nombre del cliente" value={propuesta.cliente} placeholder="Cliente" onChange={(cliente) => cambiarPropuesta({ cliente })} />
           <TextField label="Dirección / proyecto" value={propuesta.direccion} placeholder="Dirección del sitio" onChange={(direccion) => cambiarPropuesta({ direccion })} />
-          <TextField label="Diseñador / asesor" value={propuesta.asesor} placeholder="Nombre" onChange={(asesor) => cambiarPropuesta({ asesor })} />
         </div>
         {descarga.estado === 'error' && (
           <p role="alert" className="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">

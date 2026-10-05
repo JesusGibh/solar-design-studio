@@ -36,9 +36,11 @@ export const PROYECTO_INICIAL = {
     retranqueo: '0.5', // m libres desde los bordes
     orientacion: 'vertical', // 'vertical' (portrait) | 'horizontal' (landscape)
     inclinacion: '10', // °
+    altura: '5', // m del suelo al borde bajo del techo (solo para la vista 3D)
     azimut: '', // ° ; vacío = estimado a partir del trazo
   },
-  propuesta: { id: '', empresa: 'Solar Design Studio', cliente: '', direccion: '', asesor: '' },
+  // marca: clave de config/brands.js · autor: clave de config/authors.js
+  propuesta: { id: '', marca: 'solar-5-estrellas', autor: 'jesus-ariza', cliente: '', direccion: '' },
   finanzas: {
     precioWp: '', // $/Wp instalado
     bateriaId: '', // batería del catálogo incluida en la propuesta

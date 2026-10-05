@@ -99,7 +99,9 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
   const areaM2 = areaPoligono(puntos)
   const coseno = Math.cos(inclinacion * RAD)
   const azimut = azimutManual ?? azimutEstimado(puntos, lat0)
-  const base = { areaM2, areaInclinadaM2: areaM2 / coseno, azimut, cantidad: null, rectangulos: [], plano: { poligono: puntos, paneles: [] } }
+  // `origen` es el punto del mapa que corresponde al (0, 0) del plano local.
+  const origen = aMapa({ x: 0, y: 0 })
+  const base = { areaM2, areaInclinadaM2: areaM2 / coseno, azimut, cantidad: null, rectangulos: [], plano: { origen, poligono: puntos, paneles: [] } }
   if (!panel?.largo_mm || !panel?.ancho_mm) return base
 
   // Se gira el plano para que las filas queden horizontales: son perpendiculares a la dirección de caída.
@@ -148,7 +150,7 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
     ...base,
     cantidad: enPlano.length,
     rectangulos: enPlano.map((esquinas) => esquinas.map(aMapa)),
-    plano: { poligono: puntos, paneles: enPlano },
+    plano: { origen, poligono: puntos, paneles: enPlano },
   }
 }
 
