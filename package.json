@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "fichas": "node scripts/procesar_fichas.js",
+    "datos": "node scripts/base_datos.js",
     "publicar": "node scripts/publicar.js"
   },
   "dependencies": {

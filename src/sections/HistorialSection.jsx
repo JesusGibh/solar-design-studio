@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { CloudDownload, CloudUpload, Copy, FolderOpen, History, Link2, LoaderCircle, RefreshCw, Trash2 } from 'lucide-react'
+import { CloudDownload, CloudUpload, Copy, Database, Download, Eye, FolderOpen, History, Link2, LoaderCircle, RefreshCw, Trash2 } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import { fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { CATEGORIES } from '../config/equipos.js'
+import { getRol } from '../config/roles.js'
 import { useEquipos } from '../hooks/useEquipos.js'
 import { reemplazarProyecto } from '../hooks/useProyecto.js'
 import { guardarCaptura3d } from '../lib/captura3d.js'
 import { slug } from '../lib/fichas/registros.js'
-import { eliminarPropuesta, sincronizarHistorial, useHistorial } from '../lib/historial.js'
-import { guardarUrlNube, leerUrlNube, nube } from '../lib/nube.js'
+import { archivoActivo } from '../lib/archivo.js'
+import { cargarDeLaBase, eliminarPropuesta, esAjena, sincronizarHistorial, useHistorial } from '../lib/historial.js'
+import { guardarUrlNube, leerUrlNube, nube, urlNubeDeLaBase } from '../lib/nube.js'
+import { useSesion } from '../lib/sesion.js'
 
 const boton =
   'flex items-center gap-1.5 rounded border border-line px-2.5 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50'
@@ -30,6 +33,8 @@ function aCatalogo(remoto) {
 
 export default function HistorialSection({ irA }) {
   const historial = useHistorial()
+  const { perfil } = useSesion()
+  const rol = getRol(perfil.rol)
   const { catalogo, reemplazarCatalogo } = useEquipos()
   const [url, setUrl] = useState(leerUrlNube)
   const [conectada, setConectada] = useState(() => Boolean(leerUrlNube()))
@@ -75,6 +80,16 @@ export default function HistorialSection({ irA }) {
     irA('propuesta')
   }
 
+  // Archivo con las propuestas a la vista, para entregarlo a quien administra la base de datos
+  // (lo copia en datos/recibidas/ y quedan integradas).
+  const exportar = () => {
+    const enlace = document.createElement('a')
+    enlace.href = URL.createObjectURL(new Blob([JSON.stringify(historial)], { type: 'application/json' }))
+    enlace.download = `propuestas-${perfil.usuario}-${new Date().toISOString().slice(0, 10)}.json`
+    enlace.click()
+    URL.revokeObjectURL(enlace.href)
+  }
+
   const eliminar = (propuesta) => {
     if (!window.confirm(`¿Eliminar ${propuesta.id}${propuesta.cliente ? ` (${propuesta.cliente})` : ''} del historial? No se puede deshacer.`)) return
     con(`eliminar-${propuesta.id}`, async () => {
@@ -84,13 +99,26 @@ export default function HistorialSection({ irA }) {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <Panel title="Propuestas guardadas" icon={History}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-ink-muted">
-            {historial.length} propuesta(s) · {conectada ? 'sincronizadas con Google Sheets' : 'guardadas en este navegador'}
+            {historial.length} propuesta(s) · {archivoActivo ? 'en la base de datos del proyecto' : 'de la base de datos y de este navegador'}
+            {conectada && rol.nube ? ' · sincronizadas con Google Sheets' : ''}
           </p>
-          {conectada && (
+          <div className="flex flex-wrap gap-2">
+          {archivoActivo ? (
+            <button type="button" disabled={Boolean(ocupado)} onClick={() => con('base', async () => `${await cargarDeLaBase()} propuesta(s) en la base de datos.`)} className={boton}>
+              {ocupado === 'base' ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="size-4" aria-hidden="true" />}
+              Releer la base de datos
+            </button>
+          ) : (
+            <button type="button" disabled={historial.length === 0} onClick={exportar} className={boton} title="Descarga un archivo con estas propuestas para integrarlas a la base de datos">
+              <Download className="size-4" aria-hidden="true" />
+              Exportar propuestas
+            </button>
+          )}
+          {conectada && rol.nube && (
             <button
               type="button"
               disabled={Boolean(ocupado)}
@@ -101,6 +129,7 @@ export default function HistorialSection({ irA }) {
               Actualizar desde la hoja
             </button>
           )}
+          </div>
         </div>
 
         {historial.length === 0 ? (
@@ -133,17 +162,26 @@ export default function HistorialSection({ irA }) {
                     <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">{propuesta.autor}</td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-2">
-                        <button type="button" onClick={() => cargar(propuesta, false)} className={boton} title="Abrir esta propuesta para verla o editarla">
-                          <FolderOpen className="size-4" aria-hidden="true" />
-                          Abrir / editar
-                        </button>
+                        {esAjena(propuesta) ? (
+                          <button type="button" onClick={() => cargar(propuesta, false)} className={boton} title="Ver esta propuesta sin modificarla">
+                            <Eye className="size-4" aria-hidden="true" />
+                            Ver
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => cargar(propuesta, false)} className={boton} title="Abrir esta propuesta para editarla">
+                            <FolderOpen className="size-4" aria-hidden="true" />
+                            Abrir / editar
+                          </button>
+                        )}
                         <button type="button" onClick={() => cargar(propuesta, true)} className={boton} title="Crear una propuesta nueva a partir de esta">
                           <Copy className="size-4" aria-hidden="true" />
                           Copiar como nueva
                         </button>
-                        <button type="button" onClick={() => eliminar(propuesta)} disabled={Boolean(ocupado)} className={boton} aria-label={`Eliminar ${propuesta.id}`}>
-                          <Trash2 className="size-4" aria-hidden="true" />
-                        </button>
+                        {(!esAjena(propuesta) || rol.eliminarAjenas) && (
+                          <button type="button" onClick={() => eliminar(propuesta)} disabled={Boolean(ocupado)} className={boton} aria-label={`Eliminar ${propuesta.id}`}>
+                            <Trash2 className="size-4" aria-hidden="true" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -152,12 +190,46 @@ export default function HistorialSection({ irA }) {
             </table>
           </div>
         )}
+        {aviso && !rol.nube && (
+          <p role="status" className={`mt-3 rounded border px-3 py-2 text-sm ${aviso.ok ? 'border-ok/40 bg-ok/10 text-ok' : 'border-danger/40 bg-danger/10 text-danger'}`}>
+            {aviso.texto}
+          </p>
+        )}
         <p className="mt-3 text-xs text-ink-dim">
-          Abrir una propuesta reemplaza el proyecto que tengas en pantalla. El render 3D no se guarda en el historial: vuelve a capturarlo en Diseño.
+          Abrir una propuesta reemplaza el proyecto que tengas en pantalla. Las de otros usuarios se pueden ver y copiar como nueva, no modificar. El render 3D no se guarda en el historial: vuelve a capturarlo en Diseño.
+          {!archivoActivo && ' Las propuestas nuevas quedan en este navegador: expórtalas para que pasen a la base de datos.'}
         </p>
       </Panel>
 
-      <Panel title="Conexión con Google Sheets" icon={Link2}>
+      {rol.secciones === null && (
+        <Panel title="Base de datos del proyecto" icon={Database}>
+          <p className="text-sm text-ink-muted">
+            La base de datos son archivos CSV en la carpeta <code className="font-mono text-xs text-ink">datos/</code> del proyecto, que se editan con Excel. No se
+            sube a GitHub y en el sitio publicado viaja cifrada: solo se abre con un usuario y una clave.
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-ink-muted">
+            <li><code className="font-mono text-xs text-ink">usuarios.csv</code>: quién entra, con qué clave y con qué rol (admin o ingeniero).</li>
+            <li><code className="font-mono text-xs text-ink">paneles.csv</code>, <code className="font-mono text-xs text-ink">inversores.csv</code>, <code className="font-mono text-xs text-ink">baterias.csv</code>, <code className="font-mono text-xs text-ink">rsd.csv</code>: catálogo de equipos.</li>
+            <li><code className="font-mono text-xs text-ink">propuestas.csv</code>: una fila por propuesta guardada.</li>
+          </ul>
+          <p className="mt-2 text-xs text-ink-dim">
+            {archivoActivo
+              ? 'Estás trabajando en local: las propuestas que guardes se escriben directamente en la base de datos.'
+              : 'Este es el sitio publicado, de solo lectura: muestra la base de datos tal como estaba al publicar.'}{' '}
+            Los cambios en usuarios, equipos y propuestas llegan al sitio la próxima vez que ejecutes <code className="font-mono text-ink">npm run publicar</code>. Los
+            archivos que exporten otros usuarios se copian en <code className="font-mono text-ink">datos/recibidas/</code>.
+          </p>
+        </Panel>
+      )}
+
+      {rol.nube && (
+      <Panel title="Hoja compartida de Google Sheets" icon={Link2}>
+        <p className="mb-3 text-sm text-ink-muted">
+          Es lo que mantiene <strong className="text-ink">un solo consecutivo</strong> y las propuestas de todos al día en el sitio publicado.{' '}
+          {urlNubeDeLaBase()
+            ? 'Está configurada en la base de datos y la usan todos los usuarios.'
+            : 'Aún no está en la base de datos: después de implementar el script, pega su URL en datos/configuracion.csv (fila url_hoja) y publica; así la usan todos sin configurar nada. Aquí abajo puedes probarla solo en este navegador.'}
+        </p>
         <label className="block">
           <span className={labelClass}>URL de la aplicación web del Apps Script (termina en /exec)</span>
           <div className="flex flex-wrap gap-2">
@@ -236,6 +308,7 @@ export default function HistorialSection({ irA }) {
           </p>
         </details>
       </Panel>
+      )}
     </div>
   )
 }

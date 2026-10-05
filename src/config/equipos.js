@@ -2,7 +2,7 @@ import { BatteryCharging, Cpu, PanelTop, Power } from 'lucide-react'
 
 // Fuente única de las categorías de equipos: de aquí salen las pestañas, las columnas de la tabla
 // y el mapeo de encabezados al importar un CSV. Las claves son las del esquema de
-// src/data/catalogo_equipos.json (lo genera scripts/procesar_fichas.js).
+// catálogo (datos/*.csv, que arranca de lo que genera scripts/procesar_fichas.js).
 // type: 'text' | 'number' | 'list' (varios valores separados por ";") | 'enum' (se guarda en mayúsculas)
 // tableHidden: el campo se importa pero se muestra combinado en otra columna (ver tableLabel / format).
 const MARCA = { key: 'marca', label: 'Marca', type: 'text', aliases: ['brand', 'fabricante'] }

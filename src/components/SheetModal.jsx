@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloudDownload, Download, LoaderCircle, X } from 'lucide-react'
 import { CATEGORIES, fieldHeader, getCategory } from '../config/equipos.js'
-import fichas from '../data/catalogo_equipos.json'
+import { leerSesion } from '../lib/sesion.js'
 import { equiposToCsv } from '../lib/sheets.js'
 
 // Diálogo para pegar el enlace público de una hoja de Google y cargarla en una categoría.
@@ -38,7 +38,7 @@ export default function SheetModal({ categoryId, fuentes, onCargar, onClose }) {
   }
 
   // La plantilla lleva los encabezados esperados y unas filas reales del catálogo como ejemplo.
-  const ejemplos = fichas.filter((registro) => registro.categoria === category.categoria).slice(0, 5)
+  const ejemplos = leerSesion().catalogo.filter((registro) => registro.categoria === category.categoria).slice(0, 5)
   const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(equiposToCsv(selectedId, ejemplos))}`
 
   return (

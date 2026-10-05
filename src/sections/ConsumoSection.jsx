@@ -100,7 +100,7 @@ export default function ConsumoSection() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-5">
-      <div className="grid gap-4 lg:col-span-3">
+      <div className="grid grid-cols-1 gap-4 lg:col-span-3">
         <Panel title="Acometida y red" icon={PlugZap}>
           <fieldset>
             <legend className={labelClass}>Tensión de servicio</legend>
@@ -265,7 +265,7 @@ export default function ConsumoSection() {
         </Panel>
 
         <Panel title="Recurso solar y objetivo" icon={SlidersHorizontal}>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumberField
               label="Horas solar pico (HSP)"
               unit="h/día"

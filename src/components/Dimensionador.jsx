@@ -101,7 +101,7 @@ export default function Dimensionador() {
   const { ratio, strings, techo, interconexion } = evaluacion ?? {}
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <Panel title="Dimensionamiento del sistema" icon={Calculator}>
         <Toggle value={esAuto ? 'auto' : 'manual'} options={MODOS} onChange={cambiarModo} />
 

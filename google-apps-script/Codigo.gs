@@ -21,7 +21,7 @@
 const HOJA_PROPUESTAS = 'Propuestas'
 const HOJAS_CATALOGO = { paneles: 'Paneles', inversores: 'Inversores', baterias: 'Baterias', rsd: 'RSD' }
 // La última columna guarda el proyecto completo en JSON: es lo que permite reabrir la propuesta.
-const COLUMNAS = ['id', 'fecha', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios', 'datos']
+const COLUMNAS = ['id', 'fecha', 'usuario', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios', 'datos']
 
 function doGet(e) {
   return responder(function () {

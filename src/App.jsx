@@ -1,13 +1,26 @@
 import { useState } from 'react'
-import { Eraser, Sun } from 'lucide-react'
+import { Eraser, LogOut, Sun } from 'lucide-react'
+import Login from './components/Login.jsx'
+import { getRol } from './config/roles.js'
 import { SECTIONS } from './config/sections.js'
 import { limpiarProyecto } from './hooks/useProyecto.js'
 import { guardarCaptura3d } from './lib/captura3d.js'
+import { cerrarSesion, useSesion } from './lib/sesion.js'
 
+// La app solo se muestra con una sesión abierta; cada usuario ve las secciones que permite su rol.
 export default function App() {
-  const [activeId, setActiveId] = useState(SECTIONS[0].id)
-  const activeIndex = SECTIONS.findIndex((section) => section.id === activeId)
-  const active = SECTIONS[activeIndex]
+  const { estado, perfil } = useSesion()
+  if (estado === 'cargando') return <p className="flex min-h-screen items-center justify-center text-sm text-ink-muted">Cargando…</p>
+  if (estado === 'fuera') return <Login />
+  return <Estudio key={perfil.usuario} perfil={perfil} />
+}
+
+function Estudio({ perfil }) {
+  const rol = getRol(perfil.rol)
+  const secciones = SECTIONS.filter((section) => !rol.secciones || rol.secciones.includes(section.id))
+  const [activeId, setActiveId] = useState(secciones[0].id)
+  const activeIndex = secciones.findIndex((section) => section.id === activeId)
+  const active = secciones[activeIndex]
   const ActiveSection = active.component
 
   // Deja todos los campos en blanco para una propuesta nueva. El catálogo de equipos y el historial
@@ -28,10 +41,10 @@ export default function App() {
               <Sun className="size-5 text-accent" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-base font-semibold leading-tight tracking-tight">
+              <h1 className="text-[1rem] font-semibold leading-tight tracking-tight text-ink">
                 Solar Design Studio
               </h1>
-              <p className="font-mono text-[11px] uppercase tracking-wider text-ink-dim">
+              <p className="hidden font-mono text-[11px] uppercase tracking-wider text-ink-dim sm:block">
                 Dimensionamiento y diseño fotovoltaico
               </p>
             </div>
@@ -46,9 +59,22 @@ export default function App() {
               <Eraser className="size-4" aria-hidden="true" />
               Limpiar
             </button>
-            <span className="hidden rounded border border-line px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-muted sm:inline">
+            <span className="hidden rounded border border-line px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-ink-muted lg:inline">
               Creado por Ing. Jesús Ariza
             </span>
+            <span className="hidden text-right leading-tight sm:block">
+              <span className="block text-sm text-ink">{perfil.nombre}</span>
+              <span className="block font-mono text-[11px] uppercase tracking-wider text-ink-dim">{rol.label}</span>
+            </span>
+            <button
+              type="button"
+              onClick={cerrarSesion}
+              title="Cerrar sesión"
+              className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+              Salir
+            </button>
           </div>
         </div>
 
@@ -56,7 +82,7 @@ export default function App() {
           aria-label="Secciones principales"
           className="mx-auto flex max-w-screen-2xl gap-1 overflow-x-auto px-4 sm:px-6"
         >
-          {SECTIONS.map((section, index) => {
+          {secciones.map((section, index) => {
             const Icon = section.icon
             const isActive = section.id === activeId
             return (
@@ -85,7 +111,7 @@ export default function App() {
       <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-6 sm:px-6">
         <div className="mb-5">
           <p className="font-mono text-[11px] uppercase tracking-wider text-accent">
-            Paso {activeIndex + 1} de {SECTIONS.length}
+            Paso {activeIndex + 1} de {secciones.length}
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight">{active.label}</h2>
           <p className="mt-1 text-sm text-ink-muted">{active.description}</p>

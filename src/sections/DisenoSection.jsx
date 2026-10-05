@@ -64,7 +64,7 @@ export default function DisenoSection() {
           />
         </Suspense>
       )}
-      <div className="grid gap-4 lg:col-span-3">
+      <div className="grid grid-cols-1 gap-4 lg:col-span-3">
         <Panel title="Mapa satelital y trazado del techo" icon={Map}>
           <Suspense fallback={<div className="flex h-[26rem] items-center justify-center text-sm text-ink-dim">Cargando mapa…</div>}>
             <MapaTecho

@@ -1,9 +1,16 @@
+import { leerSesion } from './sesion.js'
+
 // Conexión con la hoja de Google Sheets a través de su Apps Script (ver google-apps-script/Codigo.gs).
-// La URL del script se guarda en este navegador, no en el código: cada dispositivo la pega una vez.
+// Es lo que da numeración única y propuestas compartidas al instante entre todos los usuarios.
+// La URL del script sale de la base de datos (datos/configuracion.csv, fila url_hoja), donde viaja
+// cifrada y vale para todos; mientras no esté ahí, el administrador puede pegarla en su navegador.
 
 const CLAVE = 'sds.nube.url'
 
+export const urlNubeDeLaBase = () => leerSesion().configuracion?.url_hoja ?? ''
+
 export function leerUrlNube() {
+  if (urlNubeDeLaBase()) return urlNubeDeLaBase()
   try {
     return localStorage.getItem(CLAVE) ?? ''
   } catch {

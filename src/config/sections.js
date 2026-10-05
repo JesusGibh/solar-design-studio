@@ -38,7 +38,7 @@ export const SECTIONS = [
   {
     id: 'historial',
     label: 'Historial de Propuestas',
-    description: 'Propuestas guardadas para reabrir, editar o copiar, y conexión con Google Sheets.',
+    description: 'Propuestas guardadas en la base de datos para reabrir, editar o copiar.',
     icon: History,
     component: HistorialSection,
   },

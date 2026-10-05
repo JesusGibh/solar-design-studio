@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, Download, FileText, LoaderCircle, Presentation, Save, TrendingUp, Wallet } from 'lucide-react'
+import { BarChart3, Copy, Download, FileText, LoaderCircle, Presentation, Save, TrendingUp, Wallet } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import VistaPreviaPropuesta from '../components/VistaPreviaPropuesta.jsx'
 import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
 import { GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
 import { leerProyecto } from '../hooks/useProyecto.js'
-import { AUTHORS, AUTHOR_POR_DEFECTO, getAuthor } from '../config/authors.js'
+import { getAuthor } from '../config/authors.js'
 import { BRANDS, BRAND_POR_DEFECTO, getBrand } from '../config/brands.js'
+import { getRol } from '../config/roles.js'
 import { useCaptura3d } from '../lib/captura3d.js'
 import { cargarLogo } from '../lib/marca.js'
 import { aNumero } from '../lib/consumo.js'
 import { DEFECTOS_FINANZAS, proyectar } from '../lib/finanzas.js'
-import { guardarPropuesta, registroDe } from '../lib/historial.js'
+import { esAjena, guardarPropuesta, registroDe, useHistorial } from '../lib/historial.js'
 import { reservarIdPropuesta } from '../lib/numeracion.js'
+import { useSesion } from '../lib/sesion.js'
 
 const PRECIOS_WP = [0.85, 0.95, 1.1, 1.25]
 
@@ -57,14 +59,25 @@ export default function PropuestaSection() {
   const [vistaPrevia, setVistaPrevia] = useState(false)
   const [guardado, setGuardado] = useState(null) // { ok, texto } del último guardado
   const captura = useCaptura3d()
-  const marca = getBrand(propuesta.marca)
-  const autor = getAuthor(propuesta.autor)
+  const { perfil } = useSesion()
+  const { elegirMarca } = getRol(perfil.rol)
+  // Una propuesta de otro usuario se abre solo para verla: conserva su firma y su marca, y no se guarda.
+  const soloLectura = esAjena(useHistorial().find((guardada) => guardada.id === propuesta.id))
+  // Firma quien inició sesión. La marca solo la elige quien tiene permiso; el resto cotiza con la principal.
+  const autorId = soloLectura ? propuesta.autor : perfil.autor
+  const marcaId = soloLectura || elegirMarca ? propuesta.marca : BRAND_POR_DEFECTO
+  const marca = getBrand(marcaId)
+  const autor = getAuthor(autorId)
   const evaluacion = sistema?.evaluacion
   const cambiar = (cambios) => actualizar('finanzas', cambios)
   const cambiarPropuesta = (cambios) => actualizar('propuesta', cambios)
 
+  useEffect(() => {
+    if (propuesta.autor !== autorId || propuesta.marca !== marcaId) actualizar('propuesta', { autor: autorId, marca: marcaId })
+  }, [propuesta.autor, propuesta.marca, autorId, marcaId, actualizar])
+
   // Una propuesta sin número (recién limpiada o copiada del historial) toma el siguiente correlativo:
-  // lo reparte la hoja de Google Sheets si está conectada; si no, el contador de este navegador.
+  // lo reparte la base de datos (ver lib/numeracion.js).
   useEffect(() => {
     if (propuesta.id) return
     let vigente = true
@@ -76,10 +89,16 @@ export default function PropuestaSection() {
     }
   }, [propuesta.id, actualizar])
 
-  // Guarda la propuesta en el historial (y en la hoja, si está conectada). Con el mismo número, actualiza.
+  // Guarda la propuesta en el historial (ver lib/historial.js). Con el mismo número, actualiza.
   const guardar = async () => {
+    if (soloLectura) return
     const resultado = await guardarPropuesta(registroDe({ proyecto, sistema, proyeccion, marca, autor }))
-    setGuardado(resultado.error ? { ok: false, texto: `Guardada en este navegador, pero la hoja falló: ${resultado.error}` } : { ok: true, texto: `${propuesta.id} guardada en el historial${resultado.enNube ? ' y en Google Sheets' : ''}.` })
+    const destinos = [resultado.enBase ? 'en la base de datos' : 'en el historial de este navegador', resultado.enNube && 'en Google Sheets'].filter(Boolean)
+    setGuardado(
+      resultado.error
+        ? { ok: false, texto: `Guardada en este navegador, pero algo falló: ${resultado.error}` }
+        : { ok: true, texto: `${propuesta.id} guardada ${destinos.join(' y ')}.` },
+    )
   }
 
   const bateria = baterias.find((equipo) => equipo.id === finanzas.bateriaId)
@@ -144,6 +163,7 @@ export default function PropuestaSection() {
         autor,
         propuesta: {
           ...propuesta,
+          moneda: 'B/.',
           fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }),
           validezDias: Math.floor(aNumero(finanzas.validezDias) ?? 15),
         },
@@ -178,7 +198,7 @@ export default function PropuestaSection() {
   const puedeDescargar = Boolean(sistema?.panel && sistema.numPaneles > 0 && propuesta.id)
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {vistaPrevia && <VistaPreviaPropuesta generar={generarDocumento} nombre={archivo} onClose={() => setVistaPrevia(false)} />}
       <Panel title="Datos de la propuesta" icon={FileText}>
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -190,7 +210,7 @@ export default function PropuestaSection() {
             <button
               type="button"
               onClick={guardar}
-              disabled={!propuesta.id}
+              disabled={!propuesta.id || soloLectura}
               className="flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50"
             >
               <Save className="size-4" aria-hidden="true" />
@@ -220,33 +240,36 @@ export default function PropuestaSection() {
             </button>
           </div>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <fieldset>
-            <legend className={labelClass}>Marca de la cotización</legend>
-            <Toggle
-              value={propuesta.marca in BRANDS ? propuesta.marca : BRAND_POR_DEFECTO}
-              options={Object.entries(BRANDS).map(([id, item]) => [id, item.nombre])}
-              onChange={(valor) => cambiarPropuesta({ marca: valor })}
-            />
-          </fieldset>
-          <label className="block">
-            <span className={labelClass}>Autor firmante</span>
-            <select
-              value={propuesta.autor in AUTHORS ? propuesta.autor : AUTHOR_POR_DEFECTO}
-              onChange={(event) => cambiarPropuesta({ autor: event.target.value })}
-              className={campoTexto}
+        {soloLectura && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-warn">
+            <p>Propuesta elaborada por {autor.firma}: puedes verla y descargarla, pero no modificarla.</p>
+            <button
+              type="button"
+              onClick={() => cambiarPropuesta({ id: '' })}
+              className="flex items-center gap-2 rounded border border-warn/60 px-2.5 py-1 font-medium transition-colors hover:bg-warn/10"
             >
-              {Object.entries(AUTHORS).map(([id, item]) => (
-                <option key={id} value={id}>
-                  {item.nombre} · {item.cargo}
-                </option>
-              ))}
-            </select>
-          </label>
+              <Copy className="size-4" aria-hidden="true" />
+              Copiar como nueva
+            </button>
+          </div>
+        )}
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {elegirMarca && (
+            <fieldset disabled={soloLectura}>
+              <legend className={labelClass}>Marca de la cotización</legend>
+              <Toggle
+                value={marcaId in BRANDS ? marcaId : BRAND_POR_DEFECTO}
+                options={Object.entries(BRANDS).map(([id, item]) => [id, item.nombre])}
+                onChange={(valor) => cambiarPropuesta({ marca: valor })}
+              />
+            </fieldset>
+          )}
           <TextField label="Nombre del cliente" value={propuesta.cliente} placeholder="Cliente" onChange={(cliente) => cambiarPropuesta({ cliente })} />
           <TextField label="Dirección / proyecto" value={propuesta.direccion} placeholder="Dirección del sitio" onChange={(direccion) => cambiarPropuesta({ direccion })} />
-          <TextField label="Símbolo de moneda en el PDF" value={propuesta.moneda} placeholder="B/." onChange={(moneda) => cambiarPropuesta({ moneda })} />
         </div>
+        <p className="mt-2 text-xs text-ink-dim">
+          Elaborada por {autor.firma} · {marca.nombre}
+        </p>
         {guardado && (
           <p role="status" className={`mt-3 rounded border px-3 py-2 text-xs ${guardado.ok ? 'border-ok/40 bg-ok/10 text-ok' : 'border-warn/40 bg-warn/10 text-warn'}`}>
             {guardado.texto}
@@ -319,9 +342,9 @@ export default function PropuestaSection() {
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-5">
-        <div className="grid gap-4 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-4 lg:col-span-2">
           <Panel title="Inversión y supuestos" icon={Wallet}>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <NumberField
                 label="Precio por Watt instalado"
                 unit="$/Wp"
@@ -420,7 +443,7 @@ export default function PropuestaSection() {
           </Panel>
         </div>
 
-        <div className="grid gap-4 lg:col-span-3">
+        <div className="grid grid-cols-1 gap-4 lg:col-span-3">
           <Panel title="Generación solar estimada vs. consumo" icon={BarChart3}>
             {evaluacion?.generacionPorMes && resumen.mensual ? (
               <>

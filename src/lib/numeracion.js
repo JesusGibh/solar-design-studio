@@ -1,8 +1,11 @@
+import { archivo, archivoActivo } from './archivo.js'
+import { ultimoNumeroConocido } from './historial.js'
 import { nube, nubeActiva } from './nube.js'
 
 // Numeración correlativa de propuestas: PROP-<año>-0001, 0002… La cuenta vuelve a empezar cada año.
-// Con la hoja de Google Sheets conectada el número lo reparte la hoja, así no se repite entre
-// dispositivos; sin conexión se usa un contador guardado en este navegador.
+// El número lo reparte, por orden de preferencia: la hoja de Google Sheets si está conectada; la base
+// de datos (datos/propuestas.csv) trabajando en local; y si no, un contador de este navegador que
+// continúa desde el último número conocido de la base.
 const CLAVE = 'sds.propuestas.ultimo'
 
 function leerContador(anio) {
@@ -24,7 +27,7 @@ function guardarContador(anio, numero) {
 
 function siguienteLocal() {
   const anio = new Date().getFullYear()
-  const numero = leerContador(anio) + 1
+  const numero = Math.max(leerContador(anio), ultimoNumeroConocido(anio)) + 1
   guardarContador(anio, numero)
   return `PROP-${anio}-${String(numero).padStart(4, '0')}`
 }
@@ -37,9 +40,9 @@ export function reservarIdPropuesta() {
   if (enCurso) return enCurso
   const reserva = (async () => {
     try {
-      if (!nubeActiva()) return siguienteLocal()
-      const id = await nube.siguienteId()
-      // El contador local sigue al de la hoja, por si más tarde se trabaja sin conexión.
+      if (!nubeActiva() && !archivoActivo) return siguienteLocal()
+      const id = nubeActiva() ? await nube.siguienteId() : await archivo.siguienteId()
+      // El contador local sigue al compartido, por si más tarde se trabaja sin él.
       const [, anio, numero] = id.match(/^PROP-(\d{4})-(\d+)$/) ?? []
       if (anio) guardarContador(Number(anio), Math.max(Number(numero), leerContador(Number(anio))))
       return id

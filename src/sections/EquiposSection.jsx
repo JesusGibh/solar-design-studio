@@ -1,9 +1,27 @@
 import { useState } from 'react'
-import { CloudDownload, LoaderCircle, RefreshCw, RotateCcw, Search } from 'lucide-react'
+import { CloudDownload, Columns3, Eye, EyeOff, LoaderCircle, Pencil, RefreshCw, RotateCcw, Search, Trash2 } from 'lucide-react'
+import EquipoModal from '../components/EquipoModal.jsx'
 import PdfDropzone from '../components/PdfDropzone.jsx'
 import SheetModal from '../components/SheetModal.jsx'
 import { CATEGORIES, getCategory } from '../config/equipos.js'
+import { getRol } from '../config/roles.js'
 import { useEquipos } from '../hooks/useEquipos.js'
+import { useSesion } from '../lib/sesion.js'
+
+// Campo por el que se filtra la capacidad en cada categoría.
+const CAPACIDAD = { paneles: 'potencia_wp', inversores: 'potencia_ac_nominal_kw', baterias: 'capacidad_kwh' }
+// Columnas ocultas por categoría; se recuerdan en este navegador. Marca y modelo siempre se muestran.
+const CLAVE_COLUMNAS = 'sds.equipos.columnas'
+const FIJAS = ['marca', 'modelo']
+function leerOcultas() {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_COLUMNAS)) ?? {}
+  } catch {
+    return {}
+  }
+}
+const filtro = 'rounded border border-line bg-base px-2 py-1.5 text-sm placeholder:text-ink-dim'
+const accion = 'rounded border border-line p-1.5 text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50'
 
 const secondaryButton =
   'flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-60'
@@ -47,7 +65,13 @@ function Cell({ field, equipo }) {
 }
 
 export default function EquiposSection() {
-  const { catalogo, fuentes, modificadas, cargarDesdeSheet, agregar, restaurar } = useEquipos()
+  const { completo: catalogo, fuentes, modificadas, cargarDesdeSheet, agregar, guardarEquipo, eliminarEquipo, restaurar } = useEquipos()
+  const puedeEditar = getRol(useSesion().perfil.rol).equipos
+  const [marca, setMarca] = useState('')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [editando, setEditando] = useState(null)
+  const [ocultas, setOcultas] = useState(leerOcultas)
   const [activeId, setActiveId] = useState(CATEGORIES[0].id)
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -57,15 +81,64 @@ export default function EquiposSection() {
   const category = getCategory(activeId)
   const equipos = catalogo[activeId]
   const fuente = fuentes[activeId]
-  const columns = category.fields.filter((field) => !field.tableHidden)
+  const disponibles = category.fields.filter((field) => !field.tableHidden)
+  const ocultasAqui = ocultas[activeId] ?? []
+  const columns = disponibles.filter((field) => !ocultasAqui.includes(field.key))
+  const alternarColumna = (key) => {
+    const nuevas = { ...ocultas, [activeId]: ocultasAqui.includes(key) ? ocultasAqui.filter((otra) => otra !== key) : [...ocultasAqui, key] }
+    setOcultas(nuevas)
+    try {
+      localStorage.setItem(CLAVE_COLUMNAS, JSON.stringify(nuevas))
+    } catch {
+      // Sin almacenamiento la elección dura solo esta sesión.
+    }
+  }
   const term = query.trim().toLowerCase()
-  const visibles = term
-    ? equipos.filter((equipo) => `${equipo.marca} ${equipo.modelo}`.toLowerCase().includes(term))
-    : equipos
+  const marcas = [...new Set(equipos.map((equipo) => equipo.marca))].sort((a, b) => a.localeCompare(b))
+  const campoCapacidad = category.fields.find((field) => field.key === CAPACIDAD[activeId])
+  const limite = (texto) => (texto.trim() === '' || !Number.isFinite(Number(texto.replace(',', '.'))) ? null : Number(texto.replace(',', '.')))
+  const minimo = limite(desde)
+  const maximo = limite(hasta)
+  const visibles = equipos.filter((equipo) => {
+    if (term && !`${equipo.marca} ${equipo.modelo}`.toLowerCase().includes(term)) return false
+    if (marca && equipo.marca !== marca) return false
+    if (campoCapacidad && (minimo != null || maximo != null)) {
+      const capacidad = equipo[campoCapacidad.key]
+      if (capacidad == null || (minimo != null && capacidad < minimo) || (maximo != null && capacidad > maximo)) return false
+    }
+    return true
+  })
+  const filtrando = Boolean(term || marca || minimo != null || maximo != null)
+
+  const limpiarFiltros = () => {
+    setQuery('')
+    setMarca('')
+    setDesde('')
+    setHasta('')
+  }
 
   const selectCategory = (id) => {
     setActiveId(id)
-    setQuery('')
+    limpiarFiltros()
+  }
+
+  // Dónde quedó el cambio: en la base de datos (trabajando en local) o solo en este navegador.
+  const destino = (enBase) => (enBase ? `en la base de datos (datos/${activeId}.csv)` : 'en este navegador. Para que aplique a todos los usuarios, hazlo trabajando en local y publica')
+  const conEquipo = async (texto, operacion) => {
+    try {
+      setNotice({ ok: true, text: `${texto} ${destino(await operacion())}.` })
+    } catch (err) {
+      setNotice({ ok: false, text: err.message })
+    }
+  }
+  const alternarActivo = (equipo) => {
+    const { activo: _activo, ...resto } = equipo
+    const activar = equipo.activo === false
+    conEquipo(`${equipo.marca} ${equipo.modelo} ${activar ? 'activada' : 'desactivada: ya no se ofrece al dimensionar'}, guardado`, () => guardarEquipo(activeId, activar ? resto : { ...resto, activo: false }))
+  }
+  const eliminar = (equipo) => {
+    if (!window.confirm(`¿Eliminar la ficha ${equipo.marca} ${equipo.modelo}? Si solo quieres que no se use, desactívala.`)) return
+    conEquipo(`${equipo.marca} ${equipo.modelo} eliminada`, () => eliminarEquipo(activeId, equipo.id))
   }
 
   const handleCargar = async (categoryId, url) => {
@@ -119,7 +192,7 @@ export default function EquiposSection() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Tipo de equipo" className="flex gap-1 rounded-md border border-line bg-panel p-1">
+        <div role="tablist" aria-label="Tipo de equipo" className="flex max-w-full gap-1 overflow-x-auto rounded-md border border-line bg-panel p-1">
           {CATEGORIES.map((item) => {
             const Icon = item.icon
             const isActive = item.id === activeId
@@ -130,7 +203,7 @@ export default function EquiposSection() {
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => selectCategory(item.id)}
-                className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm transition-colors ${
+                className={`flex shrink-0 items-center gap-2 rounded px-3 py-1.5 text-sm transition-colors ${
                   isActive ? 'bg-raised text-ink' : 'text-ink-muted hover:text-ink'
                 }`}
               >
@@ -165,7 +238,8 @@ export default function EquiposSection() {
             className="flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
           >
             <CloudDownload className="size-4" aria-hidden="true" />
-            Cargar desde Google Sheet (CSV URL)
+            <span className="sm:hidden">Cargar Google Sheet</span>
+            <span className="hidden sm:inline">Cargar desde Google Sheet (CSV URL)</span>
           </button>
         </div>
       </div>
@@ -190,23 +264,65 @@ export default function EquiposSection() {
             <span className="ml-3 normal-case tracking-normal text-ink-dim">
               {fuente
                 ? `Google Sheets · cargado el ${new Date(fuente.fecha).toLocaleString('es')}`
-                : 'Catálogo extraído de las fichas técnicas'}
+                : 'Base de datos del proyecto'}
             </span>
           </p>
-          <label className="relative">
-            <span className="sr-only">Buscar por marca o modelo</span>
-            <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-dim"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar marca o modelo"
-              className="w-56 rounded border border-line bg-base py-1.5 pl-8 pr-3 text-sm placeholder:text-ink-dim"
-            />
-          </label>
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+            <label>
+              <span className="sr-only">Filtrar por marca</span>
+              <select value={marca} onChange={(event) => setMarca(event.target.value)} className={filtro}>
+                <option value="">Todas las marcas</option>
+                {marcas.map((nombre) => (
+                  <option key={nombre} value={nombre}>
+                    {nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {campoCapacidad && (
+              <div className="flex items-center gap-1.5 text-xs text-ink-dim">
+                <span>
+                  Capacidad ({campoCapacidad.unit ?? campoCapacidad.label})
+                </span>
+                <input type="text" inputMode="decimal" value={desde} onChange={(event) => setDesde(event.target.value)} placeholder="desde" aria-label="Capacidad mínima" className={`${filtro} w-20 font-mono`} />
+                <span>–</span>
+                <input type="text" inputMode="decimal" value={hasta} onChange={(event) => setHasta(event.target.value)} placeholder="hasta" aria-label="Capacidad máxima" className={`${filtro} w-20 font-mono`} />
+              </div>
+            )}
+            <label className="relative min-w-40 flex-1 lg:flex-none">
+              <span className="sr-only">Buscar por marca o modelo</span>
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-dim" aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar marca o modelo"
+                className="w-full rounded border border-line bg-base py-1.5 pl-8 pr-3 text-sm placeholder:text-ink-dim lg:w-56"
+              />
+            </label>
+            <details className="relative">
+              <summary className={`${filtro} flex cursor-pointer list-none items-center gap-1.5 text-ink-muted hover:text-ink`}>
+                <Columns3 className="size-4" aria-hidden="true" />
+                Columnas
+                {ocultasAqui.length > 0 && <span className="font-mono text-[11px] text-accent">−{ocultasAqui.length}</span>}
+              </summary>
+              <div className="absolute right-0 z-10 mt-1 w-56 rounded-md border border-line-strong bg-panel p-2 shadow-lg">
+                {disponibles
+                  .filter((field) => !FIJAS.includes(field.key))
+                  .map((field) => (
+                    <label key={field.key} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-ink-muted hover:bg-raised hover:text-ink">
+                      <input type="checkbox" checked={!ocultasAqui.includes(field.key)} onChange={() => alternarColumna(field.key)} className="accent-(--color-accent)" />
+                      {field.tableLabel ?? field.label}
+                    </label>
+                  ))}
+              </div>
+            </details>
+            {filtrando && (
+              <button type="button" onClick={limpiarFiltros} className="text-xs text-ink-muted underline hover:text-ink">
+                Quitar filtros
+              </button>
+            )}
+          </div>
         </header>
 
         <div className="overflow-x-auto">
@@ -219,13 +335,14 @@ export default function EquiposSection() {
                     {field.unit && <span className="ml-1 normal-case text-ink-dim/70">({field.unit})</span>}
                   </th>
                 ))}
+                {puedeEditar && <th scope="col" className="px-4 py-2 text-right font-medium">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {visibles.map((equipo, index) => (
                 <tr
                   key={`${equipo.marca}-${equipo.modelo}-${index}`}
-                  className="border-b border-line/60 transition-colors last:border-0 hover:bg-raised"
+                  className={`border-b border-line/60 transition-colors last:border-0 hover:bg-raised ${equipo.activo === false ? 'opacity-50' : ''}`}
                 >
                   {columns.map((field) => (
                     <td
@@ -247,16 +364,40 @@ export default function EquiposSection() {
                           OCR
                         </span>
                       )}
+                      {field.key === 'modelo' && equipo.activo === false && (
+                        <span className="ml-2 rounded border border-line-strong px-1.5 py-0.5 font-mono text-[10px] text-ink-muted">INACTIVA</span>
+                      )}
                     </td>
                   ))}
+                  {puedeEditar && (
+                    <td className="px-4 py-1.5">
+                      <div className="flex justify-end gap-1.5">
+                        <button type="button" onClick={() => setEditando(equipo)} className={accion} aria-label={`Editar ${equipo.modelo}`} title="Editar ficha">
+                          <Pencil className="size-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => alternarActivo(equipo)}
+                          className={accion}
+                          aria-label={`${equipo.activo === false ? 'Activar' : 'Desactivar'} ${equipo.modelo}`}
+                          title={equipo.activo === false ? 'Activar ficha' : 'Desactivar ficha (no se ofrece al dimensionar)'}
+                        >
+                          {equipo.activo === false ? <Eye className="size-4" aria-hidden="true" /> : <EyeOff className="size-4" aria-hidden="true" />}
+                        </button>
+                        <button type="button" onClick={() => eliminar(equipo)} className={accion} aria-label={`Eliminar ${equipo.modelo}`} title="Eliminar ficha">
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {visibles.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length} className="px-4 py-8 text-center text-sm text-ink-dim">
+                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-sm text-ink-dim">
                     {equipos.length === 0
                       ? 'Aún no hay equipos en esta categoría. Sube una ficha técnica en PDF o carga una hoja de Google.'
-                      : `Ningún equipo coincide con «${query}».`}
+                      : 'Ningún equipo coincide con los filtros.'}
                   </td>
                 </tr>
               )}
@@ -269,6 +410,19 @@ export default function EquiposSection() {
         Los valores se extraen automáticamente de las fichas técnicas. Los marcados OCR vienen de PDF escaneados y
         pueden traer dígitos mal leídos: verifícalos contra la ficha antes de usarlos en un diseño.
       </p>
+
+      {editando && (
+        <EquipoModal
+          category={category}
+          equipo={editando}
+          onClose={() => setEditando(null)}
+          onGuardar={async (nuevo) => {
+            const enBase = await guardarEquipo(activeId, nuevo)
+            setEditando(null)
+            setNotice({ ok: true, text: `${nuevo.marca} ${nuevo.modelo}: cambios guardados ${destino(enBase)}.` })
+          }}
+        />
+      )}
 
       {modalOpen && (
         <SheetModal
