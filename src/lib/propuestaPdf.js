@@ -215,35 +215,71 @@ export function construirPropuestaPdf(jsPDF, datos) {
     texto(valor, x, 63.5, { tamano: 10.5, negrita: true, ancho: UTIL / 3 - 4 })
   })
 
+  // Imágenes: con captura 3D va grande a la izquierda y el satélite en una columna a la derecha;
+  // sin ella, el satélite ocupa todo el ancho. Las proporciones coinciden con las de cada captura.
   const yImagen = 76
-  const altoImagen = 92
-  if (datos.imagenTecho) {
+  const hueco = (x, ancho, alto, mensaje) => {
+    doc.setFillColor(...FONDO)
+    doc.rect(x, yImagen, ancho, alto, 'F')
+    texto(mensaje, x + ancho / 2, yImagen + alto / 2, { tamano: 8, color: TENUE, align: 'center', ancho: ancho - 8 })
+  }
+  let altoImagen = 84
+  if (datos.imagen3d) {
+    altoImagen = 68
+    const ancho3d = (altoImagen * 1600) / 940
+    doc.addImage(datos.imagen3d, 'PNG', MARGEN, yImagen, ancho3d, altoImagen)
+    const anchoSatelite = UTIL - ancho3d - 3
+    if (datos.imagenTecho) doc.addImage(datos.imagenTecho, 'JPEG', MARGEN + ancho3d + 3, yImagen, anchoSatelite, altoImagen)
+    else hueco(MARGEN + ancho3d + 3, anchoSatelite, altoImagen, 'Vista satelital no disponible')
+  } else if (datos.imagenTecho) {
     doc.addImage(datos.imagenTecho, 'JPEG', MARGEN, yImagen, UTIL, altoImagen)
   } else {
-    doc.setFillColor(...FONDO)
-    doc.rect(MARGEN, yImagen, UTIL, altoImagen, 'F')
-    texto('Vista satelital no disponible: traza el techo en el módulo de Diseño.', ANCHO / 2, yImagen + altoImagen / 2, { tamano: 9, color: TENUE, align: 'center' })
+    hueco(MARGEN, UTIL, altoImagen, 'Vista satelital no disponible: traza el techo en el módulo de Diseño.')
   }
   if (datos.techo) {
     texto(
-      `Arreglo de ${sistema.numPaneles} módulos sobre ${num(datos.techo.areaM2, 0)} m² de techo · azimut ${num(datos.techo.azimut, 0)}° · inclinación ${num(datos.techo.inclinacion, 0)}°`,
+      `${datos.imagen3d ? 'Vista 3D y vista satelital del arreglo' : 'Arreglo'} de ${sistema.numPaneles} módulos sobre ${num(datos.techo.areaM2, 0)} m² de techo · azimut ${num(datos.techo.azimut, 0)}° · inclinación ${num(datos.techo.inclinacion, 0)}°`,
       MARGEN,
       yImagen + altoImagen + 5,
       { tamano: 8, color: TENUE },
     )
   }
 
-  const yTarjetas = 182
+  // Dos filas de tarjetas: el sistema y su retorno.
+  const yTarjetas = yImagen + altoImagen + 11
   const anchoTarjeta = (UTIL - 12) / 4
   const tarjetas = [
     ['Potencia DC', num(evaluacion.kwp, 2), 'kWp instalados'],
     ['Potencia AC', num(evaluacion.potenciaAcKw, 2), 'kW de inversores'],
     ['Generación anual', num(evaluacion.generacionAnualKwh, 0), 'kWh estimados'],
     ['Ahorro año 1', dinero(proyeccion?.ahorroAnual), 'estimado'],
+    ['Inversión total', dinero(proyeccion?.costoTotal), datos.precioWp ? `${dinero(datos.precioWp, 2)} por Wp` : ''],
+    ['Payback', proyeccion ? (proyeccion.payback == null ? '> 25' : num(proyeccion.payback, 1)) : '—', 'años'],
+    ['ROI a 25 años', proyeccion ? `${num(proyeccion.roi, 0)} %` : '—', 'ganancia neta / inversión'],
+    ['CO2 evitado', proyeccion ? `${num(proyeccion.co2Toneladas, 1)} t` : '—', 'en 25 años'],
   ]
-  tarjetas.forEach((item, i) => tarjeta(MARGEN + (anchoTarjeta + 4) * i, yTarjetas, anchoTarjeta, 24, ...item))
+  tarjetas.forEach((item, i) => tarjeta(MARGEN + (anchoTarjeta + 4) * (i % 4), yTarjetas + Math.floor(i / 4) * 28, anchoTarjeta, 24, ...item))
 
-  texto('Resumen', MARGEN, 220, { tamano: 10.5, negrita: true })
+  // Equipos principales, en dos renglones.
+  const yEquipos = yTarjetas + 62
+  texto('Equipos', MARGEN, yEquipos, { tamano: 10.5, negrita: true })
+  texto(
+    `Módulos: ${sistema.numPaneles} × ${sistema.panel.marca} ${sistema.panel.modelo} (${sistema.panel.potencia_wp} Wp)`,
+    MARGEN,
+    yEquipos + 6,
+    { tamano: 9.5, color: TENUE, ancho: UTIL },
+  )
+  texto(
+    sistema.inversor
+      ? `Inversor: ${sistema.cantidad} × ${sistema.inversor.marca} ${sistema.inversor.modelo} (${num(sistema.inversor.potencia_ac_nominal_kw, 2)} kW)`
+      : 'Inversor: por definir',
+    MARGEN,
+    yEquipos + 11,
+    { tamano: 9.5, color: TENUE, ancho: UTIL },
+  )
+
+  const yResumen = yEquipos + 21
+  texto('Resumen', MARGEN, yResumen, { tamano: 10.5, negrita: true })
   const frases = [
     `Se propone un sistema fotovoltaico de ${num(evaluacion.kwp, 2)} kWp con ${sistema.numPaneles} módulos ${sistema.panel.marca} ${sistema.panel.modelo} de ${sistema.panel.potencia_wp} Wp` +
       (sistema.inversor ? ` y ${sistema.cantidad} inversor(es) ${sistema.inversor.marca} ${sistema.inversor.modelo}.` : '.'),
@@ -254,7 +290,7 @@ export function construirPropuestaPdf(jsPDF, datos) {
       ? `Con una inversión de ${dinero(proyeccion.costoTotal)} y un ahorro de ${dinero(proyeccion.ahorroAnual)} el primer año, la inversión se recupera en ${proyeccion.payback == null ? 'más de 25' : num(proyeccion.payback, 1)} años.`
       : '',
   ]
-  texto(frases.filter(Boolean).join(' '), MARGEN, 227, { tamano: 9.5, color: TENUE, ancho: UTIL })
+  texto(frases.filter(Boolean).join(' '), MARGEN, yResumen + 6, { tamano: 9.5, color: TENUE, ancho: UTIL })
   pie(1)
 
   // ------------------------------------------------------------ Hoja 2: especificaciones y equipos

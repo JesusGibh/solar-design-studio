@@ -6,6 +6,7 @@ import { NumberField, Stat, fmt, inputClass, labelClass } from '../components/ca
 import { GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
 import { leerProyecto } from '../hooks/useProyecto.js'
+import { useCaptura3d } from '../lib/captura3d.js'
 import { aNumero } from '../lib/consumo.js'
 import { DEFECTOS_FINANZAS, proyectar } from '../lib/finanzas.js'
 import { siguienteIdPropuesta } from '../lib/numeracion.js'
@@ -50,6 +51,7 @@ export default function PropuestaSection() {
   const { finanzas, propuesta } = proyecto
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
+  const captura = useCaptura3d()
   const evaluacion = sistema?.evaluacion
   const cambiar = (cambios) => actualizar('finanzas', cambios)
   const cambiarPropuesta = (cambios) => actualizar('propuesta', cambios)
@@ -97,17 +99,21 @@ export default function PropuestaSection() {
       import('../lib/propuestaPdf.js'),
       import('../lib/mapaEstatico.js'),
     ])
+    // Junto a la captura 3D el satélite va en una columna estrecha; solo, a todo el ancho.
+    // Las medidas en píxeles siguen la proporción del hueco que le reserva la hoja 1 del PDF.
     const imagenTecho = techo
       ? await capturarTecho({
           vertices: proyecto.techo.vertices,
           rectangulos: techo.rectangulos,
           usados: sistema.numPaneles,
-          capa: proyecto.techo.capa,
+          capa: proyecto.techo.fuenteMapa,
+          ...(captura ? { ancho: 610, alto: 700 } : { ancho: 1200, alto: 566 }),
         })
       : null
     return {
       sinImagen: Boolean(techo) && !imagenTecho,
       doc: construirPropuestaPdf(jsPDF, {
+        imagen3d: captura?.imagen ?? null,
         propuesta: { ...propuesta, fecha: new Date().toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) },
         imagenTecho,
         sistema,

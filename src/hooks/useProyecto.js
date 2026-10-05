@@ -32,7 +32,7 @@ export const PROYECTO_INICIAL = {
   techo: {
     vertices: [], // [[lat, lng], …]
     vista: null, // { centro: [lat, lng], zoom } del mapa, para reabrirlo en el mismo sitio
-    capa: 'esri', // fuente de imágenes del mapa (ver lib/teselas.js)
+    fuenteMapa: 'google', // fuente de imágenes del mapa (ver lib/teselas.js)
     retranqueo: '0.5', // m libres desde los bordes
     orientacion: 'vertical', // 'vertical' (portrait) | 'horizontal' (landscape)
     inclinacion: '10', // °

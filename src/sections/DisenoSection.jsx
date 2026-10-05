@@ -1,14 +1,16 @@
-import { Suspense, lazy } from 'react'
-import { Map, Ruler } from 'lucide-react'
+import { Suspense, lazy, useState } from 'react'
+import { Box, Map, Ruler } from 'lucide-react'
 import Dimensionador from '../components/Dimensionador.jsx'
 import Panel from '../components/Panel.jsx'
 import { NumberField, Stat, Toggle, fmt, labelClass } from '../components/campos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
+import { guardarCaptura3d, useCaptura3d } from '../lib/captura3d.js'
 import { FRACCION_TECHO_UTIL, areaPanelM2, maxPanelesEnTecho } from '../lib/dimensionamiento.js'
 import { puntoCardinal } from '../lib/geometria.js'
 
-// Leaflet solo se descarga al entrar a este módulo.
+// Leaflet solo se descarga al entrar a este módulo, y Three.js al abrir la vista 3D.
 const MapaTecho = lazy(() => import('../components/MapaTecho.jsx'))
+const Vista3D = lazy(() => import('../components/Vista3D.jsx'))
 
 const ORIENTACIONES = [
   ['vertical', 'Vertical (portrait)'],
@@ -22,9 +24,22 @@ export default function DisenoSection() {
   const cambiar = (cambios) => actualizar('techo', cambios)
   const trazado = datos.vertices.length >= 3
   const usados = Math.min(sistema?.numPaneles ?? 0, techo?.cantidad ?? 0)
+  const [vista3d, setVista3d] = useState(false)
+  const captura = useCaptura3d()
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-5">
+      {vista3d && techo && (
+        <Suspense fallback={null}>
+          <Vista3D
+            plano={techo.plano}
+            usados={usados}
+            inclinacion={Math.min(60, Math.max(0, Number(datos.inclinacion) || 0))}
+            azimut={techo.azimut}
+            onClose={() => setVista3d(false)}
+          />
+        </Suspense>
+      )}
       <div className="grid gap-4 lg:col-span-3">
         <Panel title="Mapa satelital y trazado del techo" icon={Map}>
           <Suspense fallback={<div className="flex h-[26rem] items-center justify-center text-sm text-ink-dim">Cargando mapa…</div>}>
@@ -35,8 +50,8 @@ export default function DisenoSection() {
               usados={usados}
               vista={datos.vista}
               onVista={(vista) => cambiar({ vista })}
-              capa={datos.capa}
-              onCapa={(capa) => cambiar({ capa })}
+              capa={datos.fuenteMapa}
+              onCapa={(fuenteMapa) => cambiar({ fuenteMapa })}
             />
           </Suspense>
           {trazado && techo?.cantidad != null && (
@@ -57,6 +72,33 @@ export default function DisenoSection() {
               </p>
             </>
           )}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setVista3d(true)}
+              disabled={usados === 0}
+              className="flex items-center gap-2 rounded bg-accent px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
+            >
+              <Box className="size-4" aria-hidden="true" />
+              Vista 3D del Sistema
+            </button>
+            {usados === 0 ? (
+              <p className="text-xs text-ink-dim">Traza el techo y define el sistema para ver sus paneles en 3D.</p>
+            ) : captura ? (
+              <div className="flex items-center gap-3 text-xs text-ink-muted">
+                <img src={captura.imagen} alt="Captura 3D guardada" className="h-12 rounded border border-line" />
+                <span>
+                  Captura 3D guardada para la propuesta
+                  {captura.paneles !== usados && <span className="text-warn"> · es de un diseño de {captura.paneles} paneles: vuelve a capturar</span>}
+                </span>
+                <button type="button" onClick={() => guardarCaptura3d(null)} className="underline hover:text-ink">
+                  Quitar
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-ink-dim">Ábrela y pulsa «Capturar vista 3D» para incluirla en la propuesta.</p>
+            )}
+          </div>
           {excesoTecho > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
               <p>

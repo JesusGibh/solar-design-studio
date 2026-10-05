@@ -43,7 +43,7 @@ function celdas([a, b, c, d]) {
 // No guarda el trazo: recibe `vertices` y avisa cada cambio con `onVertices`.
 //   rectangulos: paneles que caben (cada uno, 4 [lat, lng]) · usados: cuántos ocupa el sistema
 //   vista / onVista: centro y zoom recordados · capa / onCapa: fuente de imágenes ('esri' | 'google')
-export default function MapaTecho({ vertices, onVertices, rectangulos, usados = rectangulos.length, vista, onVista, capa = 'esri', onCapa }) {
+export default function MapaTecho({ vertices, onVertices, rectangulos, usados = rectangulos.length, vista, onVista, capa = 'google', onCapa }) {
   const contenedor = useRef(null)
   const mapa = useRef(null)
   const capas = useRef(null)
@@ -75,9 +75,22 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
       guia: L.layerGroup().addTo(instancia),
     }
 
+    let ultimoClic = { momento: 0, x: 0, y: 0 }
     instancia.on('click', (evento) => {
       const actual = estado.current
-      if (actual.dibujando) actual.onVertices([...actual.vertices, [evento.latlng.lat, evento.latlng.lng]])
+      if (!actual.dibujando) return
+      // El segundo clic de un doble clic cae en el mismo punto: no debe crear un vértice repetido.
+      const { x, y } = evento.containerPoint
+      const repetido = evento.originalEvent.timeStamp - ultimoClic.momento < 400 && Math.hypot(x - ultimoClic.x, y - ultimoClic.y) < 6
+      ultimoClic = { momento: evento.originalEvent.timeStamp, x, y }
+      if (!repetido) actual.onVertices([...actual.vertices, [evento.latlng.lat, evento.latlng.lng]])
+    })
+    // Doble clic: termina el trazo en el último punto, como la regla de Google Earth.
+    instancia.on('dblclick', () => {
+      if (estado.current.dibujando && estado.current.vertices.length >= 3) {
+        setDibujando(false)
+        setCursor(null)
+      }
     })
     instancia.on('mousemove', (evento) => {
       if (estado.current.dibujando) setCursor([evento.latlng.lat, evento.latlng.lng])
@@ -113,11 +126,20 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
   useEffect(() => {
     const fuente = fuenteDe(capa)
     capas.current.imagen?.remove()
-    capas.current.imagen = L.tileLayer(fuente.plantilla, {
+    const imagen = L.tileLayer(fuente.plantilla, {
       maxNativeZoom: fuente.zoomInicial,
       maxZoom: ZOOM_MAXIMO,
       attribution: fuente.atribucion,
     }).addTo(mapa.current)
+    // Red de seguridad: si falla una tesela del zoom nativo (zona sin ese detalle), se baja un nivel
+    // y se amplía la imagen anterior en lugar de dejar huecos.
+    imagen.on('tileerror', (evento) => {
+      if (evento.coords.z === imagen.options.maxNativeZoom && imagen.options.maxNativeZoom > 15) {
+        imagen.options.maxNativeZoom -= 1
+        imagen.redraw()
+      }
+    })
+    capas.current.imagen = imagen
     capas.current.imagen.bringToBack()
     capas.current.ajustarNativo()
   }, [capa])
@@ -163,7 +185,15 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
       marcador.on('dblclick', (evento) => {
         L.DomEvent.stopPropagation(evento)
         const actuales = estado.current.vertices
-        if (!estado.current.dibujando && actuales.length > 3) estado.current.onVertices(actuales.filter((_, i) => i !== indice))
+        if (estado.current.dibujando) {
+          // El doble clic que termina el trazo cae sobre el vértice recién creado bajo el puntero.
+          if (actuales.length >= 3) {
+            setDibujando(false)
+            setCursor(null)
+          }
+        } else if (actuales.length > 3) {
+          estado.current.onVertices(actuales.filter((_, i) => i !== indice))
+        }
       })
     })
     // `medidas` se deriva de vertices y cerrado; no hace falta como dependencia.
@@ -276,7 +306,7 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
         {dibujando ? (
           <button type="button" onClick={terminar} disabled={vertices.length < 3} className={`${boton} border-accent bg-accent/15 text-accent hover:border-accent hover:text-accent`}>
             <Check className="size-4" aria-hidden="true" />
-            Cerrar polígono
+            Finalizar Techo
           </button>
         ) : (
           <button type="button" onClick={() => setDibujando(true)} className={boton}>
@@ -286,7 +316,7 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
         )}
         <button type="button" onClick={() => onVertices(vertices.slice(0, -1))} disabled={vertices.length === 0} className={boton}>
           <Undo2 className="size-4" aria-hidden="true" />
-          Deshacer
+          Deshacer último punto
         </button>
         <button
           type="button"
@@ -298,7 +328,7 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
           className={boton}
         >
           <Trash2 className="size-4" aria-hidden="true" />
-          Borrar
+          Limpiar
         </button>
         {onCapa && <Toggle value={capa} options={Object.entries(FUENTES).map(([id, fuente]) => [id, fuente.nombre])} onChange={onCapa} className="ml-auto" />}
       </div>
@@ -309,10 +339,12 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
         </p>
       )}
 
-      <div className="relative">
-        <div ref={contenedor} className={`h-[30rem] w-full overflow-hidden rounded border border-line ${dibujando ? 'mapa-dibujando' : ''}`} />
+      {/* La clase de "dibujando" va en el envoltorio: Leaflet gestiona las clases de su contenedor
+          y React las borraría al reescribir className (el mapa quedaba roto al pulsar «Trazar techo»). */}
+      <div className={`relative ${dibujando ? 'mapa-dibujando' : ''}`}>
+        <div ref={contenedor} className="h-[30rem] w-full overflow-hidden rounded border border-line" />
         {vertices.length >= 2 && (
-          <p className="pointer-events-none absolute left-3 top-3 z-[500] rounded border border-line-strong bg-base/90 px-3 py-1.5 font-mono text-xs text-ink">
+          <p className="pointer-events-none absolute right-3 top-3 z-[500] rounded border border-line-strong bg-base/90 px-3 py-1.5 font-mono text-xs text-ink">
             {area > 0 && (
               <>
                 Área <span className="text-accent">{area.toFixed(1)} m²</span> ·{' '}
@@ -324,7 +356,7 @@ export default function MapaTecho({ vertices, onVertices, rectangulos, usados = 
       </div>
       <p className="mt-2 text-xs text-ink-dim">
         {dibujando
-          ? 'Clic en cada esquina del techo. Para terminar, pulsa «Cerrar polígono» o haz clic en el primer vértice.'
+          ? 'Clic en cada esquina del techo. Para terminar: doble clic, clic en el primer punto o «Finalizar Techo».'
           : cerrado
             ? 'Arrastra un vértice para moverlo, doble clic para quitarlo, o toca la cota de un lado para añadir uno.'
             : 'Ubica el sitio con el buscador o el GPS y pulsa «Trazar techo».'}

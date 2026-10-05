@@ -99,7 +99,7 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
   const areaM2 = areaPoligono(puntos)
   const coseno = Math.cos(inclinacion * RAD)
   const azimut = azimutManual ?? azimutEstimado(puntos, lat0)
-  const base = { areaM2, areaInclinadaM2: areaM2 / coseno, azimut, cantidad: null, rectangulos: [] }
+  const base = { areaM2, areaInclinadaM2: areaM2 / coseno, azimut, cantidad: null, rectangulos: [], plano: { poligono: puntos, paneles: [] } }
   if (!panel?.largo_mm || !panel?.ancho_mm) return base
 
   // Se gira el plano para que las filas queden horizontales: son perpendiculares a la dirección de caída.
@@ -135,22 +135,29 @@ export function analizarTecho({ vertices, panel, orientacion = 'vertical', incli
     }
   }
 
-  const rectangulos = mejor.map(([x, y]) =>
+  // Cada panel en el plano local (metros, x al este, y al norte): lo usa la vista 3D.
+  const enPlano = mejor.map(([x, y]) =>
     [
       { x, y },
       { x: x + anchoFila, y },
       { x: x + anchoFila, y: y + altoFila },
       { x, y: y + altoFila },
-    ].map((esquina) => aMapa(deshacer(esquina))),
+    ].map(deshacer),
   )
-  return { ...base, cantidad: rectangulos.length, rectangulos }
+  return {
+    ...base,
+    cantidad: enPlano.length,
+    rectangulos: enPlano.map((esquinas) => esquinas.map(aMapa)),
+    plano: { poligono: puntos, paneles: enPlano },
+  }
 }
 
-// Distancia en metros entre dos puntos [lat, lng] cercanos.
-export function distancia(a, b) {
-  const { aPlano } = proyeccionLocal([a, b])
-  const [p, q] = [aPlano(a), aPlano(b)]
-  return Math.hypot(q.x - p.x, q.y - p.y)
+// Distancia geodésica (haversine) en metros entre dos puntos [lat, lng].
+export function distancia([lat1, lng1], [lat2, lng2]) {
+  const dLat = (lat2 - lat1) * RAD
+  const dLng = (lng2 - lng1) * RAD
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * RAD) * Math.cos(lat2 * RAD) * Math.sin(dLng / 2) ** 2
+  return 2 * RADIO_TIERRA * Math.asin(Math.sqrt(a))
 }
 
 // Cotas del trazo: longitud y punto medio de cada lado, perímetro y área.
@@ -165,7 +172,7 @@ export function medirTrazo(vertices, cerrado = true) {
     const j = (i + 1) % vertices.length
     lados.push({
       indice: i,
-      longitud: Math.hypot(puntos[j].x - puntos[i].x, puntos[j].y - puntos[i].y),
+      longitud: distancia(vertices[i], vertices[j]),
       medio: [(vertices[i][0] + vertices[j][0]) / 2, (vertices[i][1] + vertices[j][1]) / 2],
     })
   }

@@ -45,6 +45,16 @@ async function zoomNativoEsri(lat, lng) {
 }
 
 export const FUENTES = {
+  google: {
+    nombre: 'Híbrido (Google)',
+    plantilla: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    // Para la imagen de la propuesta se pide solo satélite (lyrs=s): los rótulos de calles y negocios
+    // del híbrido estorban sobre el arreglo de paneles.
+    url: (z, x, y) => `https://mt1.google.com/vt/lyrs=s&x=${x}&y=${y}&z=${z}`,
+    atribucion: 'Imágenes © Google',
+    zoomInicial: 20,
+    zoomNativo: async () => 20,
+  },
   esri: {
     nombre: 'Satélite (Esri)',
     plantilla: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -53,14 +63,7 @@ export const FUENTES = {
     zoomInicial: 17,
     zoomNativo: zoomNativoEsri,
   },
-  google: {
-    nombre: 'Híbrido (Google)',
-    plantilla: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-    url: (z, x, y) => `https://mt1.google.com/vt/lyrs=y&x=${x}&y=${y}&z=${z}`,
-    atribucion: 'Imágenes © Google',
-    zoomInicial: 20,
-    zoomNativo: async () => 20,
-  },
 }
 
-export const fuenteDe = (id) => FUENTES[id] ?? FUENTES.esri
+export const FUENTE_POR_DEFECTO = 'google'
+export const fuenteDe = (id) => FUENTES[id] ?? FUENTES[FUENTE_POR_DEFECTO]
