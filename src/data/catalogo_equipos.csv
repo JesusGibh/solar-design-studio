@@ -4,6 +4,23 @@ hoyuan-ds-nt10-72gdf-hy-570w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 570W,570,51.6,1
 hoyuan-ds-nt10-72gdf-hy-575w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 575W,575,51.75,13.95,43.56,13.2,-0.24,,,22.3,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
 hoyuan-ds-nt10-72gdf-hy-580w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 580W,580,51.9,14.01,43.75,13.26,-0.24,,,22.5,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
 hoyuan-ds-nt10-72gdf-hy-585w,PANEL_SOLAR,Hoyuan,DS-NT10-72GDF-HY 585W,585,52.05,14.07,43.96,13.31,-0.24,,,22.6,32.1,,,,,,,,,,,,,,,,,DS-NT10-72GDF-565-585W-HY-EN-V.231025.pdf
+ja-solar-jam54d41-lb-430w,PANEL_SOLAR,JA Solar,JAM54D41-LB 430W,430,38.5,14.14,32.12,13.39,-0.26,1762,1134,,,,,,,,,,,,,,,,,,,JA SOLAR JAM54D41-455LB.pdf (OCR)
+ja-solar-jam54d41-lb-435w,PANEL_SOLAR,JA Solar,JAM54D41-LB 435W,435,38.7,14.23,32.29,13.47,-0.26,1762,1134,21.8,,,,,,,,,,,,,,,,,,JA SOLAR JAM54D41-455LB.pdf (OCR)
+ja-solar-jam54d41-lb-440w,PANEL_SOLAR,JA Solar,JAM54D41-LB 440W,440,38.9,14.31,32.47,13.55,-0.26,1762,1134,22,,,,,,,,,,,,,,,,,,JA SOLAR JAM54D41-455LB.pdf (OCR)
+ja-solar-jam54d41-lb-445w,PANEL_SOLAR,JA Solar,JAM54D41-LB 445W,445,39.1,14.4,32.65,13.63,-0.26,1762,1134,,,,,,,,,,,,,,,,,,,JA SOLAR JAM54D41-455LB.pdf (OCR)
+ja-solar-jam54d41-lb-455w,PANEL_SOLAR,JA Solar,JAM54D41-LB 455W,455,39.5,14.56,33,13.79,-0.26,1762,1134,22.8,,,,,,,,,,,,,,,,,,JA SOLAR JAM54D41-455LB.pdf (OCR)
+ja-solar-jam66d45-lb-605w,PANEL_SOLAR,JA Solar,JAM66D45 LB 605W,605,47.9,16,39.6,15.28,,2382,1134,22.4,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam66d45-lb-610w,PANEL_SOLAR,JA Solar,JAM66D45 LB 610W,610,48.1,16.05,39.77,15.34,,2382,1134,22.6,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam66d45-lb-615w,PANEL_SOLAR,JA Solar,JAM66D45 LB 615W,615,48.3,16.1,39.96,15.39,,2382,1134,22.8,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam66d45-lb-620w,PANEL_SOLAR,JA Solar,JAM66D45 LB 620W,620,48.5,16.13,40.21,15.42,,2382,1134,23,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam66d45-lb-625w,PANEL_SOLAR,JA Solar,JAM66D45 LB 625W,625,48.7,16.15,40.45,15.45,,2382,1134,23.1,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam66d45-lb-630w,PANEL_SOLAR,JA Solar,JAM66D45 LB 630W,630,48.9,16.18,40.7,15.48,,2382,1134,23.3,,,,,,,,,,,,,,,,,,JA SOLAR JAM66D45 625LB.pdf (OCR)
+ja-solar-jam72d40-lb-580w,PANEL_SOLAR,JA Solar,JAM72D40 LB 580W,580,51.6,14.23,43.06,13.47,-0.25,2333,1134,21.9,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
+ja-solar-jam72d40-lb-585w,PANEL_SOLAR,JA Solar,JAM72D40 LB 585W,585,51.8,14.29,43.24,13.53,-0.25,2333,1134,,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
+ja-solar-jam72d40-lb-590w,PANEL_SOLAR,JA Solar,JAM72D40 LB 590W,590,52,14.35,43.41,13.59,-0.25,2333,1134,22.3,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
+ja-solar-jam72d40-lb-595w,PANEL_SOLAR,JA Solar,JAM72D40 LB 595W,595,52.2,14.42,43.59,13.65,-0.25,2333,1134,22.5,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
+ja-solar-jam72d40-lb-600w,PANEL_SOLAR,JA Solar,JAM72D40 LB 600W,600,52.4,14.48,43.76,13.71,-0.25,2333,1134,22.7,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
+ja-solar-jam72d40-lb-605w,PANEL_SOLAR,JA Solar,JAM72D40 LB 605W,605,52.6,14.53,43.94,13.77,-0.25,2333,1134,22.9,,,,,,,,,,,,,,,,,,JAM72D40 580-605 LB Global_EN_20240423A.pdf (OCR)
 longi-lr7-60hvhl-535m,PANEL_SOLAR,LONGi,LR7-60HVHL-535M,535,44.78,15.15,37.01,14.46,-0.2,1990,1134,23.7,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
 longi-lr7-60hvhl-540m,PANEL_SOLAR,LONGi,LR7-60HVHL-540M,540,44.88,15.25,37.11,14.55,-0.2,1990,1134,23.9,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
 longi-lr7-60hvhl-545m,PANEL_SOLAR,LONGi,LR7-60HVHL-545M,545,44.98,15.35,37.21,14.65,-0.2,1990,1134,24.2,16.3,,,,,,,,,,,,,,,,,LR7-60HVHL 540M GUARDIAN.pdf
@@ -99,12 +116,14 @@ growatt-spe-12000-es,INVERSOR,Growatt,SPE 12000 ES,,,,,,,,,,,12,Monofasico 120/2
 growatt-spe-12000-us,INVERSOR,Growatt,SPE 12000 US,,,,,,,,,,,12,Monofasico 120/240V,2,60,480,550,34,50,,,,,,,,,SPE_6000-12000US_Hoja_de_datos_MX_202501.pdf
 growatt-spf-3000tl-lvm-24p,INVERSOR,Growatt,SPF 3000TL LVM-24P,,,,,,,,,,,3,,,30,115,145,,,,,,,,,,,SPF_3000TL_LVM_Hoja_de_datos_MX.pdf
 growatt-spf-3000tl-lvm-48p,INVERSOR,Growatt,SPF 3000TL LVM-48P,,,,,,,,,,,3,,,60,115,145,,,,,,,,,,,SPF_3000TL_LVM_Hoja_de_datos_MX.pdf
+growatt-spf-3000tl-lvm-es,INVERSOR,Growatt,SPF 3000TL LVM-ES,,,,,,,,,,,3,,,120,250,250,,,,,,,,,,,SPF_3000TL_LVM-ES_Hoja_de_datos_MX.pdf (OCR)
 growatt-spf-4000t,INVERSOR,Growatt,SPF 4000T,,,,,,,,,,,4,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
 growatt-spf-4000t-dvm,INVERSOR,Growatt,SPF 4000T DVM,,,,,,,,,,,4,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
 growatt-spf-5000t,INVERSOR,Growatt,SPF 5000T,,,,,,,,,,,5,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
 growatt-spf-5000t-dvm,INVERSOR,Growatt,SPF 5000T DVM,,,,,,,,,,,5,Monofasico 120/240V,,60,145,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
 growatt-spf-6000t,INVERSOR,Growatt,SPF 6000T,,,,,,,,,,,6,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
 growatt-spf-6000t-dvm,INVERSOR,Growatt,SPF 6000T DVM,,,,,,,,,,,6,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
+growatt-spf-6000t-dvm-g2,INVERSOR,Growatt,SPF 6000T DVM-G2,,,,,,,,,,,6,,,60,200,,,,,,,,,,,,SPF_6000T_DVM-G2_Hoja_de_datos_MX.pdf (OCR)
 growatt-spf-6000t-dvm-mpv,INVERSOR,Growatt,SPF 6000T DVM-MPV,,,,,,,,,,,6,Monofasico 120/240V,,60,245,250,,,,,,,,,,,SPF_6000-18000T_DVM_MPV_Hoja_de_datos_MX_2024.pdf
 growatt-spf-8000t,INVERSOR,Growatt,SPF 8000T,,,,,,,,,,,8,Monofasico 120/240V,,,,,,,,,,,,,,,SPF-6000T-12000T-DVM-MPV-Manual.pdf
 growatt-spf-8000t-dvm,INVERSOR,Growatt,SPF 8000T DVM,,,,,,,,,,,8,Monofasico 120/240V,,,,,,,,,,,,,,,SPF_4000-12000T_DVM_Datasheet_EN_202212.pdf
@@ -160,6 +179,8 @@ hoymiles-hys-6-0lv-usg1,INVERSOR,Hoymiles,HYS-6.0LV-USG1,,,,,,,,,,,6,Monofasico 
 hoymiles-hys-7-6lv-usg1,INVERSOR,Hoymiles,HYS-7.6LV-USG1,,,,,,,,,,,7.68,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,32,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
 hoymiles-hys-9-6lv-usg1,INVERSOR,Hoymiles,HYS-9.6LV-USG1,,,,,,,,,,,9.6,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,40,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
 hoymiles-hys-11-5lv-usg1,INVERSOR,Hoymiles,HYS-11.5LV-USG1,,,,,,,,,,,11.52,Monofasico 120/240V; Trifasico 208V,2,125,500,550,40,48,,,,,,,,,HYBRID INVERTER HYS 11.5LV-USG1.pdf
+sin-marca-ivem3048-lv,INVERSOR,Sin marca,IVEM3048-LV,,,,,,,,,,,3,,,,,,,,,,,,,,,,1. INVERSOR OFF-GRID IVEM 5048-LV.pdf (OCR)
+sin-marca-ivem5048-lv,INVERSOR,Sin marca,IVEM5048-LV,,,,,,,,,,,5,,,,,,,,,,,,,,,,1. INVERSOR OFF-GRID IVEM 5048-LV.pdf (OCR)
 sin-marca-max-100ktl3-x-lv,INVERSOR,Sin marca,MAX 100KTL3-X LV,,,,,,,,,,,100,Trifasico 380/400V,10,,,1100,40,158.8,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
 sin-marca-max-110ktl3-x-lv,INVERSOR,Sin marca,MAX 110KTL3-X LV,,,,,,,,,,,110,Trifasico 380/400V,10,,,1100,40,174.6,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
 sin-marca-max-120ktl3-x-lv,INVERSOR,Sin marca,MAX 120KTL3-X LV,,,,,,,,,,,120,Trifasico 380/400V,10,,,1100,40,190.5,,,,,,,,,Ficha_técnica_español_de_MAX_100~125KTL3-X_BT.pdf
@@ -236,6 +257,12 @@ growatt-hope-4-8l-c1,BATERIA,Growatt,Hope 4.8L-C1,,,,,,,,,,,,,,,,,,,4.8,48,LiFeP
 growatt-hope-5-0l-b1,BATERIA,Growatt,Hope 5.0L-B1,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,5.12,,,,Hope 5.0L-B1 datasheet-2404.pdf
 growatt-hope-5-0l-p1,BATERIA,Growatt,Hope 5.0L-P1,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,5.12,,,,Hope_5.0L-P1_Datasheet_202412.pdf
 growatt-hope-14-3l-a1,BATERIA,Growatt,HOPE 14.3L-A1,,,,,,,,,,,,,,,,,,,14.3,51.2,LiFePO4,DC,7.17,,,,Hope_14.3L-A1_Hoja_de_datos_MX_202410.pdf
+growatt-hope-16-0lm-a1,BATERIA,Growatt,HOPE 16.0LM-A1,,,,,,,,,,,,,,,,,,,16,51.2,LiFePO4,DC,7.68,,,,HOPE_16.0LM-A1_Datasheet-2509.pdf (OCR)
 hoymiles-lb-5d-g2,BATERIA,Hoymiles,LB-5D-G2,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,2.56,,,,LITHIUM BATTERY LB-5D-G2.pdf
 hoymiles-lb-10d-usg2,BATERIA,Hoymiles,LB-10D-USG2,,,,,,,,,,,,,,,,,,,10.24,51.2,LiFePO4,DC,7.68,,,,BATERIA 51.2 10.24KW HOYMILES.pdf
+sin-marca-bateria-litio-16kwh-fla48314-eu,BATERIA,Sin marca,BATERIA LITIO 16KWH FLA48314-EU,,,,,,,,,,,,,,,,,,,16,51.2,LiFePO4,DC,8,,,,3. BATERIA LITIO 16KWH FLA48314-EU.pdf (OCR)
+sin-marca-fla48100-eu,BATERIA,Sin marca,FLA48100-EU,,,,,,,,,,,,,,,,,,,5.12,51.2,LiFePO4,DC,7.5,,,,2. BATERIA LITIO 5.12KWH FLA48100-EU.pdf (OCR)
+sin-marca-fla48171-eu,BATERIA,Sin marca,FLA48171-EU,,,,,,,,,,,,,,,,,,,8.75,51.2,LiFePO4,DC,6,,,,2. BATERIA LITIO 5.12KWH FLA48100-EU.pdf (OCR)
+sin-marca-fla48230-eu,BATERIA,Sin marca,FLA48230-EU,,,,,,,,,,,,,,,,,,,11.8,51.2,LiFePO4,DC,7.5,,,,2. BATERIA LITIO 5.12KWH FLA48100-EU.pdf (OCR)
+sin-marca-fla48250-eu,BATERIA,Sin marca,FLA48250-EU,,,,,,,,,,,,,,,,,,,12.5,51.2,LiFePO4,DC,10,,,,2. BATERIA LITIO 5.12KWH FLA48100-EU.pdf (OCR)
 solis-pack-1p20s-314-01,BATERIA,Solis,PACK-1P20S-314-01,,,,,,,,,,,,,,,,,,,20.1,64,LiFePO4,DC,,,,,SolisStorage EverCore-261kWh-125kW-NV Installation Manual_V1.0.pdf

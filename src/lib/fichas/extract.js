@@ -121,7 +121,7 @@ const CAMPOS = {
       leer: numero('imp', [3, 30]),
     },
     {
-      etiqueta: /temp\w*\.? coeff?\w*\.? (of |de |del |\()?voc|coef\w*\.? (de )?temp\w*\.? (de |del |\()?voc|voc temp|\(voc\)|beta ?voc|β/,
+      etiqueta: /temp[a-z]*?\.?\s*coef[a-z]*?\.?\s*(of|de|del)?\s*\(?\s*voc|temp\w*\.? coeff?\w*\.? (of |de |del |\()?voc|coef\w*\.? (de )?temp\w*\.? (de |del |\()?voc|voc temp|\(voc\)|beta ?voc|β/,
       leer: numero('coef_temp_voc', [-1, -0.05], { negativo: true }),
     },
     { etiqueta: /^(module )?dimensions?|^dimensiones|^tamano|module size|^size/, leer: dimensiones },
@@ -388,7 +388,9 @@ function segmentar(filas) {
 // cada potencia se trata como un modelo de la serie que indica el nombre del archivo.
 function segmentoPorPotencia(filas, nombreArchivo) {
   const [campo] = CAMPOS.PANEL_SOLAR
-  let serie = modeloDesdeArchivo(nombreArchivo).replace(/\d{3}\s*[-~]\s*\d{3}\s*w?/i, '')
+  let serie = modeloDesdeArchivo(nombreArchivo)
+    .replace(/\d{3}\s*[-~]\s*\d{3}\s*w?/i, '')
+    .replace(/(?<=[-\s])\d{3}(?=\s?(lb|w|m)\b)/i, '') // potencia suelta del modelo: "JAM66D45-615LB" -> "JAM66D45-LB"
   while (/[-_ .](en|es|pt|v[.\d]+\w*)$/i.test(serie)) serie = serie.replace(/[-_ .](en|es|pt|v[.\d]+\w*)$/i, '')
   serie = serie.replace(/-{2,}/g, '-').replace(/^-|-$/g, '')
 
@@ -399,7 +401,7 @@ function segmentoPorPotencia(filas, nombreArchivo) {
     const potencias = valores.map((celda) => numeros(celda.texto)[0])
     if (valores.length < 2 || !potencias.every((potencia) => enRango(potencia, [100, 900]))) continue
     const modelos = valores.map((celda, i) => ({ nombre: `${serie} ${potencias[i]}W`, centro: (celda.x0 + celda.x1) / 2 }))
-    return { modelos, filas }
+    return { modelos, filas, serie }
   }
   return null
 }
@@ -416,10 +418,15 @@ function celdasDeValor(fila, indiceEtiqueta, aceptaTexto) {
 }
 
 // Reparte las celdas de valor entre los modelos de la tabla. Devuelve un texto (o null) por modelo.
-function repartir(valores, modelos) {
+// `estricto` (texto de OCR): si las columnas no cuadran se descarta la fila en vez de adivinar por posición.
+function repartir(valores, modelos, estricto) {
   const n = modelos.length
   const k = valores.length
   if (k === 0) return null
+  if (estricto && n > 1 && k !== 1 && k % n !== 0) {
+    // Sobran celdas al final (trazos de una gráfica vecina leídos como texto): valen las primeras n.
+    return k > n ? valores.slice(0, n).map((celda) => celda.texto) : null
+  }
   if (n === 1) return [valores.map((celda) => celda.texto).join(' | ')]
   if (k === 1) return modelos.map(() => valores[0].texto)
   if (k === n) return valores.map((celda) => celda.texto)
@@ -441,7 +448,7 @@ function repartir(valores, modelos) {
 }
 
 // Devuelve los campos leídos por modelo y si alguna fila traía varias columnas de valores distintos.
-function leerCampos(categoria, filas, modelos) {
+function leerCampos(categoria, filas, modelos, estricto) {
   const registros = modelos.map(() => ({}))
   let multicolumna = false
   for (const campo of CAMPOS[categoria]) {
@@ -454,7 +461,11 @@ function leerCampos(categoria, filas, modelos) {
         if (valores.length === 0 && /[:：]\s*\S/.test(celda.texto)) {
           valores = [{ ...celda, texto: celda.texto.slice(celda.texto.search(/[:：]/) + 1).trim() }]
         }
-        const textos = repartir(valores, fila.modelos ?? modelos)
+        // Primer valor pegado a la etiqueta: "Maximum Power Voltage(Vmp) [V] — 43.06 | 43.24 | …".
+        const columnas = (fila.modelos ?? modelos).length
+        const pegado = celda.texto.match(/[\s—-](-?\d+(?:[.,]\d+)?)\s*$/)
+        if (pegado && columnas > 1 && valores.length === columnas - 1) valores = [{ ...celda, texto: pegado[1] }, ...valores]
+        const textos = repartir(valores, fila.modelos ?? modelos, estricto)
         if (!textos) continue
         textos.forEach((texto, i) => {
           if (texto == null) return
@@ -626,6 +637,18 @@ function completar(categoria, registro, textoDocumento) {
   return registro
 }
 
+// Un panel leído por OCR solo se acepta si sus valores son coherentes entre sí; un dígito mal
+// reconocido o una fila tomada de otra tabla (NOCT, ganancia bifacial) rompe estas relaciones.
+function panelCoherente(r) {
+  if (![r.potencia_wp, r.voc, r.isc, r.vmp, r.imp].every((valor) => valor != null)) return false
+  return (
+    r.potencia_wp % 5 === 0 &&
+    Math.abs(r.vmp * r.imp - r.potencia_wp) / r.potencia_wp <= 0.015 &&
+    enRango(r.isc / r.imp, [1.02, 1.1]) &&
+    enRango(r.voc / r.vmp, [1.12, 1.28])
+  )
+}
+
 const MINIMOS = {
   PANEL_SOLAR: (r) => r.potencia_wp != null && (r.voc != null || r.isc != null),
   INVERSOR: (r) => r.potencia_ac_nominal_kw != null,
@@ -636,7 +659,8 @@ const MINIMOS = {
 // ---------------------------------------------------------------- entrada principal
 
 // Devuelve { categoria, registros, avisos, paginasTotales, paginasUsadas }.
-export function extraerFicha(nombreArchivo, paginas) {
+// opciones.ocr: el texto viene de OCR, así que se lee en modo estricto (ver `repartir`).
+export function extraerFicha(nombreArchivo, paginas, opciones = {}) {
   const resultado = { categoria: 'OTRO', registros: [], avisos: [], paginasTotales: paginas.length, paginasUsadas: [] }
   const caracteres = paginas.reduce((total, pagina) => total + pagina.lineas.reduce((n, linea) => n + linea.texto.length, 0), 0)
   if (caracteres < 300) {
@@ -663,9 +687,13 @@ export function extraerFicha(nombreArchivo, paginas) {
 
   const filas = utiles.flatMap(construirFilas)
   let { segmentos, previas } = segmentar(filas)
-  if (segmentos.length === 0 && clasificarSegmento(textoDocumento, textoDocumento) === 'PANEL_SOLAR') {
+  // Con OCR los nombres de modelo salen mutilados; la fila de potencias es más fiable como encabezado.
+  if ((segmentos.length === 0 || opciones.ocr) && clasificarSegmento(textoDocumento, textoDocumento) === 'PANEL_SOLAR') {
     const porPotencia = segmentoPorPotencia(filas, nombreArchivo)
-    if (porPotencia) segmentos = [porPotencia]
+    if (porPotencia) {
+      segmentos = [porPotencia]
+      previas = []
+    }
   }
   const sinEncabezado = segmentos.length === 0
   if (sinEncabezado) {
@@ -681,6 +709,7 @@ export function extraerFicha(nombreArchivo, paginas) {
 
   const marca = detectarMarca(nombreArchivo, textoDocumento)
   const conteo = {}
+  let descartadosOcr = 0
   for (const segmento of segmentos) {
     // En una ficha de una sola tabla, datos como peso o dimensiones suelen quedar fuera de ella.
     const filasSegmento = segmentos.length === 1 ? [...segmento.filas, ...previas] : segmento.filas
@@ -694,7 +723,7 @@ export function extraerFicha(nombreArchivo, paginas) {
       nombreArchivo,
       segmentos.length === 1,
     )
-    const { registros: leidos, multicolumna } = leerCampos(categoria, filasSegmento, segmento.modelos)
+    const { registros: leidos, multicolumna } = leerCampos(categoria, filasSegmento, segmento.modelos, opciones.ocr)
     if (sinEncabezado && multicolumna) {
       resultado.avisos.push('La tabla trae varios modelos pero no se reconoció su fila de encabezado: revisar a mano.')
       continue
@@ -706,13 +735,24 @@ export function extraerFicha(nombreArchivo, paginas) {
       if (MODELO_CORTO.test(modelo) || modelo.endsWith('-')) return
       const registro = completar(categoria, { marca, modelo, ...campos }, textoDocumento)
       if (!MINIMOS[categoria](registro)) return
+      if (opciones.ocr && categoria === 'PANEL_SOLAR' && !panelCoherente(registro)) {
+        descartadosOcr++
+        return
+      }
+      // En tablas por clase de potencia el nombre sale de la potencia finalmente leída.
+      if (segmento.serie && registro.potencia_wp) {
+        const serie = norm(segmento.serie).startsWith(`${norm(marca)} `) ? segmento.serie.slice(marca.length + 1) : segmento.serie
+        modelo = `${serie} ${registro.potencia_wp}W`
+      }
       const limpio = { id: slug(`${marca} ${modelo}`), categoria, marca, modelo }
       for (const clave of ESQUEMA[categoria]) if (registro[clave] != null) limpio[clave] = registro[clave]
+      if (opciones.ocr) limpio.ocr = 1 // leído por OCR: verificar contra el PDF
       resultado.registros.push(limpio)
       conteo[categoria] = (conteo[categoria] ?? 0) + 1
     })
   }
 
+  if (descartadosOcr) resultado.avisos.push(`${descartadosOcr} modelo(s) descartados: el OCR dio valores incoherentes entre sí.`)
   const principal = Object.entries(conteo).sort((p, q) => q[1] - p[1])[0]
   if (principal) resultado.categoria = principal[0]
   else resultado.avisos.push('No se reconoció ninguna tabla de especificaciones con datos suficientes.')

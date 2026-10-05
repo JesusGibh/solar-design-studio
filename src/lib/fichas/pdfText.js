@@ -30,7 +30,8 @@ export async function leerPaginas(pdfjs, data) {
   return paginas
 }
 
-function agruparLineas(items) {
+// items: [{ texto, x0, x1, y, alto }] en coordenadas de página. También lo usa el OCR del script.
+export function agruparLineas(items) {
   items.sort((p, q) => p.y - q.y || p.x0 - q.x0)
   const lineas = []
   for (const item of items) {
