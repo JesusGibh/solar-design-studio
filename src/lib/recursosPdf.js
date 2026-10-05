@@ -1,5 +1,6 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { recurso } from './rutas.js'
 import { Banknote, BatteryCharging, CalendarClock, Cpu, Gauge, Leaf, PanelTop, PiggyBank, Ruler, ShieldCheck, Sun, TrendingUp, Zap } from 'lucide-react'
 
 // Recursos que el PDF necesita además de los datos: la tipografía Lato (TTF en base64) y los iconos
@@ -50,7 +51,7 @@ function rasterizar(svg, lado = 192) {
 // se puede descargar, el PDF cae a la fuente estándar en lugar de fallar.
 export async function cargarRecursosPdf(marca) {
   const [fuentes, iconos] = await Promise.all([
-    Promise.all([aBase64('/assets/fonts/Lato-Regular.ttf'), aBase64('/assets/fonts/Lato-Bold.ttf')])
+    Promise.all([aBase64(recurso('/assets/fonts/Lato-Regular.ttf')), aBase64(recurso('/assets/fonts/Lato-Bold.ttf'))])
       .then(([regular, bold]) => ({ regular, bold }))
       .catch(() => null),
     Promise.all(Object.entries(ICONOS_PDF).map(async ([nombre, Icono]) => [nombre, await rasterizar(svgDeIcono(Icono, marca.primario)).catch(() => null)])).then(
