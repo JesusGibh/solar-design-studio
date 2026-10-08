@@ -1,0 +1,1 @@
+var e=`/solar-design-studio/assets/pdf.worker.min-CjEcRF4W.mjs`;export{e as default};
