@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CloudDownload, Columns3, Eye, EyeOff, LoaderCircle, Pencil, RefreshCw, RotateCcw, Search, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CloudDownload, Columns3, Eye, EyeOff, Globe, LoaderCircle, Pencil, RefreshCw, RotateCcw, Search, Trash2 } from 'lucide-react'
 import EquipoModal from '../components/EquipoModal.jsx'
 import PdfDropzone from '../components/PdfDropzone.jsx'
 import SheetModal from '../components/SheetModal.jsx'
@@ -50,6 +50,9 @@ function Cell({ field, equipo }) {
       </span>
     )
   }
+  if (field.options) {
+    return <span className="rounded border border-line-strong px-1.5 py-0.5 font-mono text-[11px]">{field.options.find(([opcion]) => opcion === value)?.[1] ?? value}</span>
+  }
   if (field.type === 'enum') {
     return (
       <span
@@ -72,6 +75,7 @@ export default function EquiposSection() {
   const [hasta, setHasta] = useState('')
   const [editando, setEditando] = useState(null)
   const [ocultas, setOcultas] = useState(leerOcultas)
+  const [orden, setOrden] = useState(null) // { key, desc } | null = orden del catálogo
   const [activeId, setActiveId] = useState(CATEGORIES[0].id)
   const [query, setQuery] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -108,6 +112,19 @@ export default function EquiposSection() {
     }
     return true
   })
+  // Orden por la característica elegida: números de menor a mayor, textos alfabéticos; lo vacío al final.
+  if (orden) {
+    const signo = orden.desc ? -1 : 1
+    visibles.sort((a, b) => {
+      const [p, q] = [a[orden.key], b[orden.key]].map((valor) => (Array.isArray(valor) ? valor.join(' ') : valor))
+      if (p == null || p === '') return q == null || q === '' ? 0 : 1
+      if (q == null || q === '') return -1
+      return signo * (typeof p === 'number' && typeof q === 'number' ? p - q : String(p).localeCompare(String(q), 'es', { numeric: true }))
+    })
+  }
+  const ordenarPor = (key) => setOrden((actual) => (actual?.key !== key ? { key, desc: false } : actual.desc ? null : { key, desc: true }))
+  // Campos de la columna (una columna combinada, como las dimensiones, cubre varios).
+  const clavesDe = (field) => (field.key === 'largo_mm' ? ['largo_mm', 'ancho_mm'] : field.key === 'v_mppt_min' ? ['v_mppt_min', 'v_mppt_max'] : [field.key])
   const filtrando = Boolean(term || marca || minimo != null || maximo != null)
 
   const limpiarFiltros = () => {
@@ -120,10 +137,13 @@ export default function EquiposSection() {
   const selectCategory = (id) => {
     setActiveId(id)
     limpiarFiltros()
+    setOrden(null)
   }
 
   // Dónde quedó el cambio: en la base de datos (trabajando en local) o solo en este navegador.
-  const destino = (enBase) => (enBase ? `en la base de datos (datos/${activeId}.csv)` : 'en este navegador. Para que aplique a todos los usuarios, hazlo trabajando en local y publica')
+  const destino = ({ base, hoja }) =>
+    [base && `en la base de datos (datos/${activeId}.csv)`, hoja && 'en la hoja compartida de Google Sheets'].filter(Boolean).join(' y ') ||
+    'solo en este navegador: no hay hoja compartida conectada'
   const conEquipo = async (texto, operacion) => {
     try {
       setNotice({ ok: true, text: `${texto} ${destino(await operacion())}.` })
@@ -183,7 +203,8 @@ export default function EquiposSection() {
       }
     }
     if (nuevos.length > 0) {
-      agregar(nuevos)
+      const { base, hoja } = await agregar(nuevos)
+      lines.push(base || hoja ? `Guardado ${[base && 'en la base de datos', hoja && 'en la hoja compartida'].filter(Boolean).join(' y ')}.` : 'Guardado solo en este navegador.')
       selectCategory(CATEGORIES.find((item) => item.categoria === nuevos[0].categoria).id)
     }
     setNotice({ ok: nuevos.length > 0, text: lines.join('\n') })
@@ -330,9 +351,12 @@ export default function EquiposSection() {
             <thead>
               <tr className="border-b border-line text-left font-mono text-[11px] uppercase tracking-wider text-ink-dim">
                 {columns.map((field) => (
-                  <th key={field.key} scope="col" className="whitespace-nowrap px-4 py-2 font-medium">
-                    {field.tableLabel ?? field.label}
-                    {field.unit && <span className="ml-1 normal-case text-ink-dim/70">({field.unit})</span>}
+                  <th key={field.key} scope="col" aria-sort={orden?.key === field.key ? (orden.desc ? 'descending' : 'ascending') : undefined} className="whitespace-nowrap px-4 py-2 font-medium">
+                    <button type="button" onClick={() => ordenarPor(field.key)} title="Ordenar por esta columna" className="flex items-center gap-1 uppercase tracking-wider hover:text-ink">
+                      {field.tableLabel ?? field.label}
+                      {field.unit && <span className="normal-case text-ink-dim/70">({field.unit})</span>}
+                      {orden?.key === field.key && (orden.desc ? <ArrowDown className="size-3 text-accent" aria-hidden="true" /> : <ArrowUp className="size-3 text-accent" aria-hidden="true" />)}
+                    </button>
                   </th>
                 ))}
                 {puedeEditar && <th scope="col" className="px-4 py-2 text-right font-medium">Acciones</th>}
@@ -356,6 +380,11 @@ export default function EquiposSection() {
                       }`}
                     >
                       <Cell field={field} equipo={equipo} />
+                      {clavesDe(field).some((clave) => equipo.datos_web?.includes(clave)) && (
+                        <span title={`Dato obtenido de la web, no de la ficha técnica${equipo.fuente_web ? `: ${equipo.fuente_web}` : ''}`} className="ml-1.5 inline-flex align-middle text-serie-1">
+                          <Globe className="size-3.5" aria-label="Dato obtenido de la web" />
+                        </span>
+                      )}
                       {field.key === 'modelo' && equipo.ocr && (
                         <span
                           title="Leído por OCR de un PDF escaneado: verificar"
@@ -407,7 +436,9 @@ export default function EquiposSection() {
       </section>
 
       <p className="text-xs text-ink-dim">
-        Los valores se extraen automáticamente de las fichas técnicas. Los marcados OCR vienen de PDF escaneados y
+        <Globe className="mr-1 inline size-3.5 align-text-bottom text-serie-1" aria-hidden="true" />
+        marca los datos tomados de la web y no de la ficha técnica (pasa el cursor para ver la fuente). Pulsa el título de una columna para ordenar. Los valores sin
+        marca se extraen automáticamente de las fichas técnicas. Los marcados OCR vienen de PDF escaneados y
         pueden traer dígitos mal leídos: verifícalos contra la ficha antes de usarlos en un diseño.
       </p>
 

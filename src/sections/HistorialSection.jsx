@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CloudDownload, CloudUpload, Copy, Database, Download, Eye, FileText, FolderOpen, History, Link2, LoaderCircle, RefreshCw, Trash2 } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import { fmt, inputClass, labelClass } from '../components/campos.jsx'
@@ -7,35 +7,20 @@ import { getRol } from '../config/roles.js'
 import { useEquipos } from '../hooks/useEquipos.js'
 import { reemplazarProyecto } from '../hooks/useProyecto.js'
 import { guardarCaptura3d } from '../lib/captura3d.js'
-import { slug } from '../lib/fichas/registros.js'
+import { COLUMNAS_HOJA, traerCatalogo } from '../lib/catalogoNube.js'
 import { archivoActivo } from '../lib/archivo.js'
-import { cargarDeLaBase, eliminarPropuesta, esAjena, sincronizarHistorial, useHistorial } from '../lib/historial.js'
+import { cargarDeLaBase, eliminarPropuesta, esAjena, renderDePropuesta, sincronizarHistorial, useHistorial } from '../lib/historial.js'
 import { guardarUrlNube, leerUrlNube, nube, urlNubeDeLaBase } from '../lib/nube.js'
 import { useSesion } from '../lib/sesion.js'
 
 const boton =
   'flex items-center gap-1.5 rounded border border-line px-2.5 py-1.5 text-sm text-ink-muted transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50'
 
-// Columnas de cada pestaña del catálogo en la hoja: id y categoría, y luego los campos de la app.
-const COLUMNAS = Object.fromEntries(CATEGORIES.map(({ id, fields }) => [id, ['id', 'categoria', ...fields.map((field) => field.key)]]))
-
-// Equipos leídos de la hoja -> registros del catálogo (con su id y su categoría).
-function aCatalogo(remoto) {
-  return Object.fromEntries(
-    CATEGORIES.map(({ id, categoria }) => [
-      id,
-      (remoto[id] ?? [])
-        .filter((equipo) => equipo.marca && equipo.modelo)
-        .map((equipo) => ({ ...equipo, id: equipo.id || slug(`${equipo.marca} ${equipo.modelo}`), categoria })),
-    ]),
-  )
-}
-
 export default function HistorialSection({ irA }) {
   const historial = useHistorial()
   const { perfil } = useSesion()
   const rol = getRol(perfil.rol)
-  const { catalogo, reemplazarCatalogo } = useEquipos()
+  const { completo: catalogo } = useEquipos()
   const [url, setUrl] = useState(leerUrlNube)
   const [conectada, setConectada] = useState(() => Boolean(leerUrlNube()))
   const [ocupado, setOcupado] = useState(null)
@@ -73,11 +58,19 @@ export default function HistorialSection({ irA }) {
       }
     })
 
-  const cargar = (propuesta, comoCopia) => {
+  // Al abrir la sección se refresca contra la hoja compartida; sin conexión se sigue con lo que hay.
+  useEffect(() => {
+    if (leerUrlNube()) sincronizarHistorial().catch(() => {})
+  }, [])
+
+  const cargar = async (propuesta, comoCopia) => {
     // Una copia conserva todo el diseño pero suelta el número: al abrir Propuesta toma el siguiente.
     reemplazarProyecto(comoCopia ? { ...propuesta.datos, propuesta: { ...propuesta.datos.propuesta, id: '' } } : propuesta.datos)
-    guardarCaptura3d(null) // el render guardado era de otro diseño
+    // El render guardado con la propuesta vuelve con ella; si no tiene, se quita el del diseño anterior.
+    guardarCaptura3d(null)
     irA('propuesta')
+    const render = await renderDePropuesta(propuesta.id)
+    if (render) guardarCaptura3d({ ...render, fecha: propuesta.fecha })
   }
 
   // Archivo con las propuestas a la vista, para entregarlo a quien administra la base de datos
@@ -202,7 +195,7 @@ export default function HistorialSection({ irA }) {
           </p>
         )}
         <p className="mt-3 text-xs text-ink-dim">
-          Abrir una propuesta reemplaza el proyecto que tengas en pantalla. Las de otros usuarios se pueden ver y copiar como nueva, no modificar. El render 3D no se guarda en el historial: vuelve a capturarlo en Diseño.
+          Abrir una propuesta reemplaza el proyecto que tengas en pantalla. Las de otros usuarios se pueden ver y copiar como nueva, no modificar. El render 3D capturado se guarda con la propuesta y vuelve al abrirla o copiarla.
           {!archivoActivo && ' Las propuestas nuevas quedan en este navegador: expórtalas para que pasen a la base de datos.'}
         </p>
       </Panel>
@@ -260,7 +253,7 @@ export default function HistorialSection({ irA }) {
               disabled={Boolean(ocupado)}
               onClick={() =>
                 con('subir', async () => {
-                  await nube.escribirCatalogo(catalogo, COLUMNAS)
+                  await nube.escribirCatalogo(catalogo, COLUMNAS_HOJA)
                   return `Catálogo enviado a la hoja: ${CATEGORIES.map(({ id, label }) => `${catalogo[id].length} ${label.toLowerCase()}`).join(', ')}.`
                 })
               }
@@ -274,8 +267,7 @@ export default function HistorialSection({ irA }) {
               disabled={Boolean(ocupado)}
               onClick={() =>
                 con('bajar', async () => {
-                  const remoto = aCatalogo(await nube.leerCatalogo())
-                  reemplazarCatalogo(remoto, 'Hoja de propuestas')
+                  const remoto = await traerCatalogo()
                   return `Catálogo traído de la hoja: ${CATEGORIES.map(({ id, label }) => `${remoto[id].length} ${label.toLowerCase()}`).join(', ')}. Las pestañas vacías no cambian nada.`
                 })
               }

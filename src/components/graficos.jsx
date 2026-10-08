@@ -275,3 +275,114 @@ export function GraficoFlujo({ flujo, payback }) {
     </figure>
   )
 }
+
+// Día típico con baterías, hora a hora. Dos gráficas alineadas que comparten el eje de las horas
+// (potencia arriba, estado de carga abajo) en lugar de un doble eje: kW y % no se pueden leer juntos.
+//   horas: [{ hora, solarKw, cargaKw, soc }] · socMinimo: % que nunca se baja (lo fija el DoD)
+export function Grafico24h({ horas, socMinimo }) {
+  const [activo, setActivo] = useState(null)
+  const margen = { izq: 52, der: 12 }
+  const arriba = { y0: 12, alto: 170 }
+  const abajo = { y0: 214, alto: 96 }
+  const alto = abajo.y0 + abajo.alto + 26
+  const anchoPlot = ANCHO - margen.izq - margen.der
+  const x = (hora) => margen.izq + (anchoPlot * hora) / 23
+  const ticksKw = marcas(0, Math.max(...horas.map((h) => Math.max(h.solarKw, h.cargaKw)), 0.1))
+  const topeKw = ticksKw.at(-1)
+  const yKw = (valor) => arriba.y0 + arriba.alto * (1 - valor / topeKw)
+  const ySoc = (valor) => abajo.y0 + abajo.alto * (1 - valor / 100)
+  const linea = (valor, escala) => horas.map((h, i) => `${i ? 'L' : 'M'}${x(h.hora).toFixed(1)},${escala(valor(h)).toFixed(1)}`).join('')
+  const kw = (n) => `${n.toFixed(n < 10 ? 2 : 1)} kW`
+
+  return (
+    <figure>
+      <Leyenda
+        items={[
+          ['var(--color-serie-2)', 'Generación solar'],
+          ['var(--color-serie-1)', 'Consumo de las cargas'],
+        ]}
+      />
+      <div className="overflow-x-auto">
+        <svg viewBox={`0 0 ${ANCHO} ${alto}`} className="w-full min-w-[540px]" role="img" aria-label="Simulación de 24 horas: generación solar, consumo y estado de carga de la batería">
+          {ticksKw.map((tick) => (
+            <g key={tick}>
+              <line x1={margen.izq} x2={ANCHO - margen.der} y1={yKw(tick)} y2={yKw(tick)} className={tick === 0 ? 'stroke-line-strong' : 'stroke-line'} />
+              <text x={margen.izq - 8} y={yKw(tick) + 4} textAnchor="end" className="fill-ink-dim font-mono text-[11px]">
+                {tick}
+              </text>
+            </g>
+          ))}
+          <text x={margen.izq - 8} y={arriba.y0 - 3} textAnchor="end" className="fill-ink-dim text-[10px]">
+            kW
+          </text>
+          <path d={linea((h) => h.solarKw, yKw)} fill="none" stroke="var(--color-serie-2)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+          <path d={linea((h) => h.cargaKw, yKw)} fill="none" stroke="var(--color-serie-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+
+          <text x={margen.izq} y={abajo.y0 - 8} className="fill-ink-muted text-[11px]">
+            Estado de carga de la batería (SoC)
+          </text>
+          {[0, 50, 100].map((tick) => (
+            <g key={tick}>
+              <line x1={margen.izq} x2={ANCHO - margen.der} y1={ySoc(tick)} y2={ySoc(tick)} className={tick === 0 ? 'stroke-line-strong' : 'stroke-line'} />
+              <text x={margen.izq - 8} y={ySoc(tick) + 4} textAnchor="end" className="fill-ink-dim font-mono text-[11px]">
+                {tick} %
+              </text>
+            </g>
+          ))}
+          <line x1={margen.izq} x2={ANCHO - margen.der} y1={ySoc(socMinimo)} y2={ySoc(socMinimo)} strokeDasharray="4 4" className="stroke-ink-dim" />
+          <text x={ANCHO - margen.der} y={ySoc(socMinimo) - 4} textAnchor="end" className="fill-ink-dim text-[10px]">
+            mínimo {entero(socMinimo)} %
+          </text>
+          <path d={`${linea((h) => h.soc, ySoc)}L${x(23)},${ySoc(0)}L${x(0)},${ySoc(0)}Z`} className="fill-ink/10" />
+          <path d={linea((h) => h.soc, ySoc)} fill="none" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" className="stroke-ink" />
+
+          {horas.map((h) =>
+            h.hora % 3 === 0 ? (
+              <text key={h.hora} x={x(h.hora)} y={alto - 8} textAnchor="middle" className={`font-mono text-[11px] ${activo === h.hora ? 'fill-ink' : 'fill-ink-muted'}`}>
+                {String(h.hora).padStart(2, '0')}:00
+              </text>
+            ) : null,
+          )}
+
+          {activo != null && (
+            <g pointerEvents="none">
+              <line x1={x(activo)} x2={x(activo)} y1={arriba.y0} y2={abajo.y0 + abajo.alto} className="stroke-line-strong" />
+              <circle cx={x(activo)} cy={yKw(horas[activo].solarKw)} r="4" fill="var(--color-serie-2)" strokeWidth="2" className="stroke-panel" />
+              <circle cx={x(activo)} cy={yKw(horas[activo].cargaKw)} r="4" fill="var(--color-serie-1)" strokeWidth="2" className="stroke-panel" />
+              <circle cx={x(activo)} cy={ySoc(horas[activo].soc)} r="4" strokeWidth="2" className="fill-ink stroke-panel" />
+            </g>
+          )}
+          {horas.map((h) => (
+            <rect
+              key={h.hora}
+              x={x(h.hora) - anchoPlot / 46}
+              y={arriba.y0}
+              width={anchoPlot / 23}
+              height={abajo.y0 + abajo.alto - arriba.y0}
+              fill="transparent"
+              onMouseEnter={() => setActivo(h.hora)}
+              onMouseLeave={() => setActivo(null)}
+            />
+          ))}
+          {activo != null && (
+            <Tooltip
+              x={x(activo)}
+              y={arriba.y0 + 2}
+              lineas={[
+                [`${String(activo).padStart(2, '0')}:00`],
+                ['Generación', kw(horas[activo].solarKw), 'var(--color-serie-2)'],
+                ['Consumo', kw(horas[activo].cargaKw), 'var(--color-serie-1)'],
+                ['Batería (SoC)', `${entero(horas[activo].soc)} %`],
+              ]}
+            />
+          )}
+        </svg>
+      </div>
+      <Tabla
+        titulo="Ver datos en tabla"
+        columnas={['Hora', 'Generación (kW)', 'Consumo (kW)', 'Batería (SoC)']}
+        filas={horas.map((h) => [`${String(h.hora).padStart(2, '0')}:00`, h.solarKw.toFixed(2), h.cargaKw.toFixed(2), `${entero(h.soc)} %`])}
+      />
+    </figure>
+  )
+}

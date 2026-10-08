@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { aNumero, resumenConsumo } from '../lib/consumo.js'
+import { ARQUITECTURAS, MARGEN_SOBRECARGA, banco, ciclosDe, compatibilidadBateria, rangoBateria, resumenCargas, simular24h, sirveParaArquitectura } from '../lib/almacenamiento.js'
+import { DIAS_POR_MES, aNumero, resumenConsumo } from '../lib/consumo.js'
 import { DEFECTOS, dimensionarAuto, elegirPanel, evaluarSistema, marcasDe } from '../lib/dimensionamiento.js'
 import { esCompatible, getRed } from '../lib/electrico.js'
 import { analizarTecho } from '../lib/geometria.js'
@@ -13,18 +14,33 @@ const numero = (valor, defecto) => (valor !== '' && Number.isFinite(Number(valor
 // usarlo para obtener panel, inversor, cantidades y la evaluación técnica ya calculada:
 //   sistema = { panel, numPaneles, inversor, cantidad, evaluacion } | null
 //   techo   = medición y empaquetado del techo trazado para el panel del sistema (o null si no hay trazo)
+//   arquitectura = 'on_grid' | 'off_grid' | 'hibrido': decide qué inversores se ofrecen y si hay baterías
+//   almacenamiento = banco de baterías (o null si la arquitectura no lleva) · simulacion = día típico de 24 h
 export function useDimensionamiento() {
   const { proyecto, actualizar } = useProyecto()
   const { catalogo } = useEquipos()
-  const { dimensionamiento, red: datosRed, consumo, inversor: seleccion, techo: datosTecho } = proyecto
+  const { dimensionamiento, red: datosRed, consumo, inversor: seleccion, techo: datosTecho, sistema: opciones, finanzas } = proyecto
 
   const red = getRed(datosRed.tension)
   const esAuto = dimensionamiento.modo === 'auto'
-  const resumen = useMemo(() => resumenConsumo(consumo), [consumo])
+  const arquitectura = ARQUITECTURAS.some(([tipo]) => tipo === opciones.tipo) ? opciones.tipo : 'on_grid'
+  const conBateria = arquitectura === 'off_grid' || (arquitectura === 'hibrido' && Boolean(opciones.respaldo))
 
+  // En un sistema aislado el consumo puede salir de la tabla de cargas en lugar de la factura.
+  const cargas = useMemo(() => resumenCargas(opciones.cargas), [opciones.cargas])
+  const usaCargas = arquitectura === 'off_grid' && Boolean(opciones.usarCargas) && cargas.diarioKwh > 0
+  const resumen = useMemo(() => {
+    const deFactura = resumenConsumo(consumo)
+    if (!usaCargas) return deFactura
+    const anualKwh = cargas.diarioKwh * 365
+    return { ...deFactura, anualKwh, promedioKwh: anualKwh / 12, mensual: DIAS_POR_MES.map((dias) => cargas.diarioKwh * dias), costoAnual: deFactura.tarifa ? anualKwh * deFactura.tarifa : null }
+  }, [consumo, usaCargas, cargas])
+  const potenciaMinKw = usaCargas ? cargas.picoKw * MARGEN_SOBRECARGA : 0
+
+  // Inversores para la red elegida y para la arquitectura: on-grid, aislado o híbrido.
   const inversoresCompatibles = useMemo(
-    () => catalogo.inversores.filter((inversor) => esCompatible(inversor, red)),
-    [catalogo, red],
+    () => catalogo.inversores.filter((inversor) => esCompatible(inversor, red) && sirveParaArquitectura(inversor, arquitectura)),
+    [catalogo, red, arquitectura],
   )
 
   // Marcas reales del catálogo; las de inversor, solo las que tienen equipos para la red elegida.
@@ -73,8 +89,14 @@ export function useDimensionamiento() {
     ],
   )
 
+  // Un panel bifacial genera algo más por la luz que recibe por detrás: ganancia ajustable (5–15 %).
+  const esBifacial = panel?.tipo_tecnologia === 'BIFACIAL'
+  const factor = esBifacial ? 1 + Math.min(25, Math.max(0, numero(opciones.gananciaBifacial, 8))) / 100 : 1
+
   const parametros = useMemo(
     () => ({
+      factor,
+      potenciaMinKw,
       anualKwh: resumen.anualKwh,
       cobertura: aNumero(dimensionamiento.cobertura) ?? DEFECTOS.cobertura,
       hsp: aNumero(dimensionamiento.hsp) ?? DEFECTOS.hsp,
@@ -96,6 +118,8 @@ export function useDimensionamiento() {
       dimensionamiento.areaTecho,
       techo,
       datosRed,
+      factor,
+      potenciaMinKw,
     ],
   )
 
@@ -105,13 +129,13 @@ export function useDimensionamiento() {
         ...parametros,
         ajustarATecho: dimensionamiento.ajustarATecho,
         paneles: catalogo.paneles,
-        inversores: catalogo.inversores,
+        inversores: inversoresCompatibles,
         marcaPanel,
         marcaInversor,
         panelId: dimensionamiento.panelAutoId,
         inversorId: dimensionamiento.inversorAutoId,
       }),
-    [parametros, dimensionamiento.ajustarATecho, dimensionamiento.panelAutoId, dimensionamiento.inversorAutoId, catalogo, marcaPanel, marcaInversor],
+    [parametros, dimensionamiento.ajustarATecho, dimensionamiento.panelAutoId, dimensionamiento.inversorAutoId, catalogo, inversoresCompatibles, marcaPanel, marcaInversor],
   )
   const autoValido = auto && !auto.sinPanel ? auto : null
 
@@ -132,6 +156,31 @@ export function useDimensionamiento() {
   }
 
   const sistema = esAuto ? autoValido : manual
+
+  // Banco de baterías (solo en aislado, o en híbrido con respaldo) y simulación de un día típico.
+  const consumoDiaKwh = resumen.anualKwh ? resumen.anualKwh / 365 : 0
+  const inversorSistema = sistema?.inversor ?? null
+  const generacionDiaKwh = sistema?.evaluacion.generacionAnualKwh ? sistema.evaluacion.generacionAnualKwh / 365 : 0
+  const almacenamiento = useMemo(() => {
+    if (!conBateria) return null
+    const bateria = catalogo.baterias.find((equipo) => equipo.id === finanzas.bateriaId) ?? null
+    const datos = banco({
+      bateria,
+      cantidad: Math.floor(aNumero(finanzas.bateriaCantidad) ?? 0),
+      diarioKwh: consumoDiaKwh,
+      dias: Math.min(3, Math.max(1, Math.round(aNumero(opciones.autonomiaDias) ?? 1))),
+      dod: Math.min(100, aNumero(opciones.dod) ?? 0),
+    })
+    return { ...datos, bateria, obligatoria: arquitectura === 'off_grid', rango: rangoBateria(bateria), ciclos: ciclosDe(bateria), compatibilidad: compatibilidadBateria(inversorSistema, bateria) }
+  }, [conBateria, catalogo, finanzas.bateriaId, finanzas.bateriaCantidad, consumoDiaKwh, opciones.autonomiaDias, opciones.dod, arquitectura, inversorSistema])
+
+  const simulacion = useMemo(
+    () =>
+      almacenamiento?.capacidadKwh
+        ? simular24h({ generacionDiaKwh, consumoDiaKwh, capacidadKwh: almacenamiento.capacidadKwh, dod: almacenamiento.dod, potenciaKw: almacenamiento.descargaKw, perfil: opciones.perfilCarga })
+        : null,
+    [almacenamiento, generacionDiaKwh, consumoDiaKwh, opciones.perfilCarga],
+  )
   // Cuántos paneles sobran respecto a lo que cabe en el techo (0 si caben o no hay límite conocido).
   const maximoTecho = sistema?.evaluacion.techo.maxPaneles ?? null
   const excesoTecho = sistema && maximoTecho != null ? Math.max(0, (esAuto ? autoValido.numRequeridos : sistema.numPaneles) - maximoTecho) : 0
@@ -171,6 +220,13 @@ export function useDimensionamiento() {
   return {
     esAuto,
     cambiarModo,
+    arquitectura,
+    conBateria,
+    cargas,
+    usaCargas,
+    esBifacial,
+    almacenamiento,
+    simulacion,
     parametros,
     resumen,
     red,

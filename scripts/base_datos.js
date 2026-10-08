@@ -16,7 +16,7 @@ import { randomBytes, randomInt } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AUTHORS } from '../src/config/authors.js'
-import { CATEGORIES } from '../src/config/equipos.js'
+import { CATEGORIES, COLUMNAS_META } from '../src/config/equipos.js'
 import { ROLES } from '../src/config/roles.js'
 import { ITERACIONES, aBase64, cifrar, deBase64, derivarBits, huellaUsuario, importarLlave, normalizarUsuario } from '../src/lib/cifrado.js'
 import { escribirCsv, leerCsv } from '../src/lib/csv.js'
@@ -28,7 +28,7 @@ const en = (...partes) => path.join(CARPETA, ...partes)
 
 const COLUMNAS_USUARIOS = ['usuario', 'nombre', 'rol', 'clave', 'autor', 'activo']
 const COLUMNAS_PROPUESTAS = ['id', 'fecha', 'usuario', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios']
-const columnasDe = (categoria) => ['id', ...categoria.fields.map((campo) => campo.key), 'ocr', 'activo']
+export const columnasDe = (categoria) => ['id', ...categoria.fields.map((campo) => campo.key), ...COLUMNAS_META]
 const COLUMNAS_CONFIG = ['clave', 'valor']
 const ID_PROPUESTA = /^PROP-(\d{4})-(\d+)$/
 
@@ -144,6 +144,8 @@ function leerCatalogo(avisos) {
         if (clave === 'id' || clave === 'categoria' || texto === '') continue
         if (clave === 'ocr') {
           if (/^(si|sí|true|1|x)$/i.test(texto)) registro.ocr = true
+        } else if (clave === 'datos_web') {
+          registro.datos_web = texto.split(/[|;]/).map((parte) => parte.trim()).filter(Boolean)
         } else if (clave === 'activo') {
           // Una ficha desactivada sigue en la base, pero no se ofrece al dimensionar.
           if (/^(no|0|false)$/i.test(texto)) registro.activo = false

@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "fichas": "node scripts/procesar_fichas.js",
     "datos": "node scripts/base_datos.js",
+    "clasificar": "node scripts/clasificar_fichas.js",
     "respaldo": "node scripts/respaldo.js",
     "publicar": "node scripts/publicar.js"
   },

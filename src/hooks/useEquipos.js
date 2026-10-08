@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CATEGORIES } from '../config/equipos.js'
 import { archivo, archivoActivo } from '../lib/archivo.js'
+import { COLUMNAS_HOJA } from '../lib/catalogoNube.js'
+import { nube, nubeActiva } from '../lib/nube.js'
 import { agregarRegistros } from '../lib/fichas/registros.js'
 import { cambiarCatalogo, useSesion } from '../lib/sesion.js'
 import { fetchEquipos } from '../lib/sheets.js'
@@ -25,8 +27,8 @@ const categoriaDe = (categoryId) => CATEGORIES.find((category) => category.id ==
 // (así una nueva versión de la base de datos se ve de inmediato y lo cargado sigue disponible offline):
 //   reemplazos: categorías cargadas desde Google Sheets · agregados: registros extraídos de PDFs subidos
 //   fuentes: enlace y fecha de la última carga de cada categoría
-//   ediciones / eliminados: fichas editadas o borradas en el sitio publicado, donde no se puede escribir
-//   en la base (trabajando en local esos cambios van directo a datos/*.csv)
+//   ediciones / eliminados: fichas editadas o borradas cuando no hay dónde compartirlas. Lo normal es
+//   que vayan a la hoja de Google Sheets (repositorio maestro) y, trabajando en local, a datos/*.csv
 // Devuelve `catalogo` (las fichas activas, para dimensionar) y `completo` (también las desactivadas).
 export function useEquipos() {
   const [state, setState] = useState(readStored)
@@ -90,33 +92,69 @@ export function useEquipos() {
     })
   }, [])
 
-  const agregar = useCallback((registros) => {
-    setState((prev) => ({ ...prev, agregados: agregarRegistros(prev.agregados, registros) }))
-  }, [])
-
-  // Guarda los cambios de una ficha (también activarla o desactivarla, con `activo`).
-  // Devuelve true si quedó en la base de datos, false si solo en este navegador.
-  const guardarEquipo = useCallback(async (categoryId, equipo) => {
+  // Escribe una ficha donde se comparte: datos/*.csv en local y la hoja de Google si está conectada.
+  // Devuelve { base, hoja } con lo que se logró; si no hay ninguno, la ficha queda en este navegador.
+  const compartir = useCallback(async (categoryId, equipo) => {
+    const destino = { base: false, hoja: false }
     if (archivoActivo) {
       await archivo.guardarEquipo(categoryId, equipo)
-      cambiarCatalogo((lista) => (lista.some((otro) => otro.id === equipo.id) ? lista.map((otro) => (otro.id === equipo.id ? equipo : otro)) : [...lista, equipo]))
+      destino.base = true
     }
+    if (nubeActiva()) {
+      await nube.guardarEquipo(categoryId, equipo, COLUMNAS_HOJA[categoryId])
+      destino.hoja = true
+    }
+    if (destino.base || destino.hoja) cambiarCatalogo((lista) => (lista.some((otro) => otro.id === equipo.id) ? lista.map((otro) => (otro.id === equipo.id ? equipo : otro)) : [...lista, equipo]))
+    return destino
+  }, [])
+
+  // Fichas nuevas (extraídas de un PDF subido). Devuelve { base, hoja } como `guardarEquipo`.
+  const agregar = useCallback(
+    async (registros) => {
+      let destino = { base: false, hoja: false }
+      const locales = []
+      for (const registro of registros) {
+        try {
+          destino = await compartir(CATEGORIES.find((category) => category.categoria === registro.categoria).id, registro)
+          if (!destino.base && !destino.hoja) locales.push(registro)
+        } catch {
+          locales.push(registro) // no se pudo compartir: al menos queda en este navegador
+        }
+      }
+      if (locales.length) setState((prev) => ({ ...prev, agregados: agregarRegistros(prev.agregados, locales) }))
+      return destino
+    },
+    [compartir],
+  )
+
+  // Guarda los cambios de una ficha (también activarla o desactivarla, con `activo`).
+  // Devuelve { base, hoja }: dónde quedó además de este navegador.
+  const guardarEquipo = useCallback(async (categoryId, equipo) => {
+    const destino = await compartir(categoryId, equipo)
+    const compartido = destino.base || destino.hoja
     const cambiar = (lista) => lista?.map((otro) => (otro.id === equipo.id ? equipo : otro))
     setState((prev) => ({
       ...prev,
       // Si la ficha venía de un PDF subido o de una hoja cargada en este navegador, se corrige ahí también.
       reemplazos: prev.reemplazos[categoryId] ? { ...prev.reemplazos, [categoryId]: cambiar(prev.reemplazos[categoryId]) } : prev.reemplazos,
       agregados: cambiar(prev.agregados),
-      ediciones: archivoActivo ? prev.ediciones : { ...prev.ediciones, [equipo.id]: equipo },
+      ediciones: compartido ? prev.ediciones : { ...prev.ediciones, [equipo.id]: equipo },
     }))
-    return archivoActivo
-  }, [])
+    return destino
+  }, [compartir])
 
   const eliminarEquipo = useCallback(async (categoryId, id) => {
+    const destino = { base: false, hoja: false }
     if (archivoActivo) {
       await archivo.eliminarEquipo(categoryId, id)
-      cambiarCatalogo((lista) => lista.filter((otro) => otro.id !== id))
+      destino.base = true
     }
+    if (nubeActiva()) {
+      await nube.eliminarEquipo(categoryId, id)
+      destino.hoja = true
+    }
+    const compartido = destino.base || destino.hoja
+    if (compartido) cambiarCatalogo((lista) => lista.filter((otro) => otro.id !== id))
     const quitar = (lista) => lista?.filter((otro) => otro.id !== id)
     setState((prev) => {
       const { [id]: _edicion, ...ediciones } = prev.ediciones
@@ -125,10 +163,10 @@ export function useEquipos() {
         reemplazos: prev.reemplazos[categoryId] ? { ...prev.reemplazos, [categoryId]: quitar(prev.reemplazos[categoryId]) } : prev.reemplazos,
         agregados: quitar(prev.agregados),
         ediciones,
-        eliminados: archivoActivo ? prev.eliminados : { ...prev.eliminados, [id]: categoriaDe(categoryId) },
+        eliminados: compartido ? prev.eliminados : { ...prev.eliminados, [id]: categoriaDe(categoryId) },
       }
     })
-    return archivoActivo
+    return destino
   }, [])
 
   // Descarta todo lo cambiado en este navegador para una categoría y vuelve a la base de datos.

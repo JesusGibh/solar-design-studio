@@ -5,6 +5,7 @@ import { getRol } from './config/roles.js'
 import { SECTIONS } from './config/sections.js'
 import { limpiarProyecto } from './hooks/useProyecto.js'
 import { guardarCaptura3d } from './lib/captura3d.js'
+import './lib/catalogoNube.js' // al entrar, el catálogo se lee de la hoja compartida
 import { cerrarSesion, useSesion } from './lib/sesion.js'
 
 // La app solo se muestra con una sesión abierta; cada usuario ve las secciones que permite su rol.

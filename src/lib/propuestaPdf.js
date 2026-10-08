@@ -24,6 +24,10 @@ const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'O
 const DIAS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 const ESTADOS = { ok: ['Cumple', VERDE], warn: ['Revisar', AMBAR], danger: ['No cumple', ROJO], pendiente: ['Sin dato', TENUE] }
 
+const TIPOLOGIAS = { on_grid: 'SISTEMA ON-GRID', off_grid: 'SISTEMA OFF-GRID', hibrido: 'SISTEMA HÍBRIDO' }
+const SISTEMA_INVERSOR = { ON_GRID: 'On-Grid', OFF_GRID: 'Off-Grid', HIBRIDO: 'Híbrido' }
+const RANGO_BATERIA = { NINGUNA: 'No admite', LOW_VOLTAGE: 'Bajo voltaje (LV)', HIGH_VOLTAGE: 'Alto voltaje (HV)' }
+
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
 // Mezcla un color con blanco: t = 0 deja el color, t = 1 deja blanco.
 const tinte = (color, t) => color.map((canal) => Math.round(canal + (255 - canal) * t))
@@ -56,7 +60,9 @@ const compacto = (valor) => {
 
 // datos: { recursos, propuesta: { id, fecha, cliente, direccion, moneda, validezDias }, marca, autor,
 //   parametros: { hsp, pr, tempMin, inflacion, degradacion, descuento, factorCo2 }, imagen3d, imagenTecho,
-//   sistema, evaluacion, proyeccion, red, techo, bateria, consumo, precioWp }
+//   sistema, evaluacion, proyeccion, red, techo, bateria, consumo, precioWp,
+//   arquitectura: 'on_grid' | 'off_grid' | 'hibrido',
+//   almacenamiento: banco de baterías (lib/almacenamiento.js) o null, simulacion: día típico de 24 h o null }
 export function construirPropuestaPdf(jsPDF, datos) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
   const { propuesta, marca, autor, sistema, evaluacion, proyeccion, parametros, consumo } = datos
@@ -390,13 +396,24 @@ export function construirPropuestaPdf(jsPDF, datos) {
   texto(propuesta.fecha, ANCHO - MARGEN, 36.5, { tamano: 9.5, color: TENUE, align: 'right' })
   caja(MARGEN, 51, UTIL, 0.9, SECUNDARIO)
 
-  texto('PROPUESTA DE SISTEMA SOLAR FOTOVOLTAICO', MARGEN, 65, { tamano: 20, negrita: true, color: PRIMARIO, ancho: UTIL })
-  texto(`${num(evaluacion.kwp, 2)} kWp — ${sistema.numPaneles} módulos de ${panel.potencia_wp} Wp`, MARGEN, 74, { tamano: 13, color: TENUE })
-  texto(`Producción estimada de ${num(evaluacion.generacionAnualKwh)} kWh al año`, MARGEN, 80.5, { tamano: 10.5, color: oscuro(SECUNDARIO, 0.3) })
+  texto('PROPUESTA DE SISTEMA SOLAR FOTOVOLTAICO', MARGEN, 64, { tamano: 20, negrita: true, color: PRIMARIO, ancho: UTIL })
+  // Tipología en una etiqueta, seguida de la potencia y los módulos.
+  const tipologia = TIPOLOGIAS[datos.arquitectura] ?? TIPOLOGIAS.on_grid
+  const anchoEtiqueta = anchoDe(tipologia, 9.5, true) + 7
+  caja(MARGEN, 68.6, anchoEtiqueta, 7, PRIMARIO, 1.4)
+  texto(tipologia, MARGEN + anchoEtiqueta / 2, 73.4, { tamano: 9.5, negrita: true, color: BLANCO, align: 'center' })
+  const tecnologia = { MONOFACIAL: ' monofaciales', BIFACIAL: ' bifaciales' }[panel.tipo_tecnologia] ?? ''
+  texto(`${num(evaluacion.kwp, 2)} kWp — ${sistema.numPaneles} módulos${tecnologia} de ${panel.potencia_wp} Wp`, MARGEN + anchoEtiqueta + 4, 73.6, { tamano: 12.5, color: TENUE })
+  texto(
+    `Producción estimada de ${num(evaluacion.generacionAnualKwh)} kWh al año${evaluacion.cobertura ? ` · cubre el ${num(evaluacion.cobertura * 100)} % del consumo anual` : ''}`,
+    MARGEN,
+    81.5,
+    { tamano: 10.5, color: oscuro(SECUNDARIO, 0.3) },
+  )
 
   // Imagen principal: el render 3D capturado en el visor; sin él, la vista satelital del arreglo.
   const yImagen = 87
-  const portada = datos.imagen3d ? { imagen: datos.imagen3d, tipo: 'PNG', alto: (UTIL * 940) / 1600 } : datos.imagenTecho ? { imagen: datos.imagenTecho, tipo: 'JPEG', alto: (UTIL * 640) / 1200 } : null
+  const portada = datos.imagen3d ? { imagen: datos.imagen3d, tipo: /^data:image\/jpe?g/.test(datos.imagen3d) ? 'JPEG' : 'PNG', alto: (UTIL * 940) / 1600 } : datos.imagenTecho ? { imagen: datos.imagenTecho, tipo: 'JPEG', alto: (UTIL * 640) / 1200 } : null
   const altoImagen = portada?.alto ?? 95
   if (portada) {
     doc.addImage(portada.imagen, portada.tipo, MARGEN, yImagen, UTIL, altoImagen)
@@ -408,24 +425,49 @@ export function construirPropuestaPdf(jsPDF, datos) {
   doc.setLineWidth(0.3)
   doc.rect(MARGEN, yImagen, UTIL, altoImagen)
 
+  // Inversión a la vista en la primera página: total, precio por vatio y, con baterías, el desglose.
+  let y = yImagen + altoImagen + 5
+  if (proyeccion) {
+    const conAlmacen = proyeccion.costoTotal > proyeccion.costoSistema
+    const altoPrecio = 22
+    caja(MARGEN, y, UTIL, altoPrecio, tinte(PRIMARIO, 0.92), 2)
+    caja(MARGEN, y, 2.2, altoPrecio, PRIMARIO)
+    texto('INVERSIÓN TOTAL DEL PROYECTO', MARGEN + 8, y + 7, { tamano: 7.5, color: TENUE })
+    texto(dinero(proyeccion.costoTotal), MARGEN + 8, y + 16.5, { tamano: 21, negrita: true, color: PRIMARIO })
+    const columnas = [[conAlmacen ? 'PRECIO POR WATT' : 'PRECIO POR WATT INSTALADO', `${moneda} ${num(datos.precioWp, 2)}/Wp`]]
+    if (conAlmacen) columnas.push(['SISTEMA FOTOVOLTAICO', dinero(proyeccion.costoSistema)], ['ALMACENAMIENTO', dinero(proyeccion.costoTotal - proyeccion.costoSistema)])
+    const x0 = MARGEN + 66
+    const anchoColumna = (UTIL - 66) / columnas.length
+    columnas.forEach(([etiqueta, valor], i) => {
+      const cx = x0 + anchoColumna * i
+      doc.setDrawColor(...tinte(PRIMARIO, 0.7))
+      doc.setLineWidth(0.25)
+      doc.line(cx, y + 4, cx, y + altoPrecio - 4)
+      texto(etiqueta, cx + 4, y + 7, { tamano: 6.5, color: TENUE })
+      texto(valor, cx + 4, y + 15.5, { tamano: conAlmacen ? 11.5 : 14, negrita: true })
+    })
+    y += altoPrecio + 4
+  } else {
+    y += 2
+  }
+
   // Ficha de la propuesta.
-  let y = yImagen + altoImagen + 7
   const ficha = [
     ['Cliente', propuesta.cliente || 'Por definir'],
     ['Sitio', propuesta.direccion || 'Por definir'],
-    ['Sistema propuesto', `${sistema.numPaneles} módulos ${panel.marca} de ${panel.potencia_wp} Wp · ${num(evaluacion.kwp, 2)} kWp · ${num(evaluacion.generacionAnualKwh)} kWh/año`],
     ['Elaborado por', autor.firma ?? autor.nombre],
     ['Validez', `${propuesta.validezDias} días calendario a partir de la fecha de emisión`],
   ]
+  const altoFila = 6.6
   ficha.forEach(([clave, valor], i) => {
-    if (i % 2 === 0) caja(MARGEN, y, UTIL, 7.4, FONDO)
-    texto(clave, MARGEN + 3, y + 4.9, { tamano: 9, negrita: true })
-    texto(valor, MARGEN + 46, y + 4.9, { tamano: 9, color: TENUE, ancho: UTIL - 50 })
-    y += 7.4
+    if (i % 2 === 0) caja(MARGEN, y, UTIL, altoFila, FONDO)
+    texto(clave, MARGEN + 3, y + 4.5, { tamano: 9, negrita: true })
+    texto(valor, MARGEN + 46, y + 4.5, { tamano: 9, color: TENUE, ancho: UTIL - 50 })
+    y += altoFila
   })
   doc.setDrawColor(...LINEA)
   doc.setLineWidth(0.2)
-  doc.rect(MARGEN, y - ficha.length * 7.4, UTIL, ficha.length * 7.4)
+  doc.rect(MARGEN, y - ficha.length * altoFila, UTIL, ficha.length * altoFila)
 
   // Franja inferior con el contacto.
   caja(0, ALTO - 20, ANCHO, 20, PRIMARIO)
@@ -593,7 +635,7 @@ export function construirPropuestaPdf(jsPDF, datos) {
       ['Relación de potencia DC/AC', evaluacion.ratio.valor ? num(evaluacion.ratio.valor, 2) : '—', '1,10 – 1,30 recomendado', estado(evaluacion.ratio.estado)],
     )
   }
-  verificaciones.push(
+  if (datos.arquitectura !== 'off_grid') verificaciones.push(
     [
       'Corriente de salida continua (125 %)',
       interconexion.acometida.corrienteContinua ? `${num(interconexion.acometida.corrienteContinua, 1)} A` : '—',
@@ -618,7 +660,112 @@ export function construirPropuestaPdf(jsPDF, datos) {
     y,
   )
 
-  // ====================================================================== Hoja 4: rendimiento solar
+  // ====================================================================== Hoja técnica de equipos y almacenamiento
+  y = nuevaHoja(datos.almacenamiento?.bateria ? 'Equipos y almacenamiento' : 'Ficha técnica de los equipos')
+  const dato = (valor, unidad = '') => (valor == null || valor === '' ? 'Sin dato en la ficha' : `${typeof valor === 'number' ? num(valor, Number.isInteger(valor) ? 0 : 2) : valor}${unidad}`)
+  const hojaTecnica = (titulo, filas, yInicio) =>
+    tabla(
+      [
+        { titulo, ancho: 70, align: 'left' },
+        { titulo: 'Valor', ancho: 108 },
+      ],
+      filas.map(([clave, valor]) => [{ texto: clave, negrita: true }, valor]),
+      yInicio,
+    )
+  y = hojaTecnica(
+    `Módulo ${panel.marca} ${panel.modelo}`,
+    [
+      ['Potencia nominal', dato(panel.potencia_wp, ' Wp')],
+      ['Tecnología', { MONOFACIAL: 'Monofacial', BIFACIAL: `Bifacial (ganancia considerada: ${num(((evaluacion.factor ?? 1) - 1) * 100)} %)` }[panel.tipo_tecnologia] ?? 'Sin dato en la ficha'],
+      ['Voc / Vmp', `${dato(panel.voc, ' V')} / ${dato(panel.vmp, ' V')}`],
+      ['Isc / Imp', `${dato(panel.isc, ' A')} / ${dato(panel.imp, ' A')}`],
+      ['Eficiencia', dato(panel.eficiencia, ' %')],
+      ['Dimensiones', panel.largo_mm && panel.ancho_mm ? `${panel.largo_mm} × ${panel.ancho_mm} mm` : 'Sin dato en la ficha'],
+    ],
+    y,
+  )
+  if (inversor) {
+    y = hojaTecnica(
+      `Inversor ${inversor.marca} ${inversor.modelo}`,
+      [
+        ['Tipo de sistema', SISTEMA_INVERSOR[inversor.tipo_sistema] ?? 'Sin clasificar'],
+        ['Potencia AC nominal', `${dato(inversor.potencia_ac_nominal_kw, ' kW')} × ${sistema.cantidad} und = ${num(evaluacion.potenciaAcKw, 2)} kW`],
+        ['Red', [].concat(inversor.tipo_red ?? 'Sin dato en la ficha').join('; ')],
+        ['Ventana MPPT', inversor.v_mppt_min && inversor.v_mppt_max ? `${inversor.v_mppt_min} – ${inversor.v_mppt_max} V` : 'Sin dato en la ficha'],
+        ['Voc máximo / MPPT', `${dato(inversor.voc_max, ' V')} / ${dato(inversor.mppt_num)}`],
+        ['Batería que admite', RANGO_BATERIA[inversor.tipo_bateria_soporte] ?? 'Sin dato en la ficha'],
+      ],
+      y + 5,
+    )
+  }
+  const almacen = datos.almacenamiento
+  if (almacen?.bateria) {
+    const bateria = almacen.bateria
+    y = hojaTecnica(
+      `Batería ${bateria.marca} ${bateria.modelo}`,
+      [
+        ['Capacidad', `${dato(bateria.capacidad_kwh, ' kWh')} × ${almacen.unidades} und = ${num(almacen.capacidadKwh, 1)} kWh`],
+        ['Voltaje nominal', `${dato(bateria.voltaje_nominal_v, ' V')}${almacen.rango ? ` · ${RANGO_BATERIA[almacen.rango]}` : ''}`],
+        ['Química', dato(bateria.tipo_quimica)],
+        ['Profundidad de descarga', `${num(almacen.dod)} % · capacidad útil ${num(almacen.utilKwh, 1)} kWh`],
+        ['Compatibilidad con el inversor', almacen.compatibilidad.mensaje ?? 'Sin verificar'],
+      ],
+      y + 5,
+    )
+  }
+
+  const simulacion = datos.simulacion
+  if (simulacion && almacen?.bateria) {
+    // Si las tablas ocuparon la hoja, la simulación pasa a una hoja propia.
+    y = y > 150 ? nuevaHoja('Simulación de 24 horas del almacenamiento') : subtitulo('Simulación de 24 horas del almacenamiento', y + 8)
+    y = cifras(
+      [
+        ['Autonomía estimada', num(simulacion.autonomiaHoras, 1), 'h'],
+        ['Capacidad útil', num(almacen.utilKwh, 1), 'kWh'],
+        ['Descarga máxima', almacen.descargaKw ? num(almacen.descargaKw, 1) : '—', almacen.descargaKw ? 'kW' : ''],
+        ['Ciclos de vida', almacen.ciclos ? `~${num(almacen.ciclos)}` : '—', almacen.ciclos ? 'típico LFP' : ''],
+      ],
+      y,
+    )
+    const { horas } = simulacion
+    const x0 = MARGEN + 12
+    const anchoGrafico = UTIL - 14
+    const aX = (hora) => x0 + (anchoGrafico * hora) / 23
+    leyenda(
+      [
+        [SERIE_2, 'Generación solar'],
+        [SERIE_1, 'Consumo de las cargas'],
+      ],
+      x0,
+      y + 2,
+    )
+    y += 7
+    const aKw = ejes(x0, y, anchoGrafico, 38, marcas(0, Math.max(...horas.map((h) => Math.max(h.solarKw, h.cargaKw))) * 1.08), (v) => num(v, v < 10 ? 1 : 0), 'kW')
+    polilinea(horas.map((h) => [aX(h.hora), aKw(h.solarKw)]), SERIE_2, 0.7)
+    polilinea(horas.map((h) => [aX(h.hora), aKw(h.cargaKw)]), SERIE_1, 0.7)
+    y += 38 + 10
+    texto('Estado de carga de la batería (SoC)', x0, y - 2.5, { tamano: 7.5, color: TENUE })
+    const aSoc = ejes(x0, y, anchoGrafico, 24, [0, 50, 100], (v) => `${v} %`)
+    poligono([...horas.map((h) => [aX(h.hora), aSoc(h.soc)]), [aX(23), aSoc(0)], [aX(0), aSoc(0)]], tinte(GRIS, 0.6))
+    polilinea(horas.map((h) => [aX(h.hora), aSoc(h.soc)]), TINTA, 0.7)
+    doc.setDrawColor(...TENUE)
+    doc.setLineWidth(0.15)
+    doc.setLineDashPattern([1, 1], 0)
+    doc.line(x0, aSoc(100 - almacen.dod), x0 + anchoGrafico, aSoc(100 - almacen.dod))
+    doc.setLineDashPattern([], 0)
+    texto(`mínimo ${num(100 - almacen.dod)} %`, x0 + anchoGrafico, aSoc(100 - almacen.dod) - 1, { tamano: 6.5, color: TENUE, align: 'right' })
+    for (let hora = 0; hora <= 21; hora += 3) texto(`${String(hora).padStart(2, '0')}:00`, aX(hora), y + 24 + 4.5, { tamano: 7, color: TENUE, align: hora === 0 ? 'left' : 'center' })
+    y += 24 + 9
+    parrafo(
+      `Día típico: la generación sigue una campana entre las 6:00 y las 18:00 y el consumo, un perfil horario de referencia. El excedente solar carga la batería y el faltante la descarga, sin bajar del ${num(100 - almacen.dod)} % que fija la profundidad de descarga.` +
+        (simulacion.sinCubrirKwh > 0.05 ? ` En este día quedan ${num(simulacion.sinCubrirKwh, 1)} kWh que el sol y la batería no cubren${datos.arquitectura === 'off_grid' ? ': conviene ampliar el arreglo o el banco' : ' y que aporta la red'}.` : ' El sol y la batería cubren todo el consumo del día.') +
+        (almacen.ciclos ? ' Los ciclos de vida son la referencia habitual para baterías LFP, no un dato de la ficha.' : ''),
+      y,
+      { tamano: 8.5 },
+    )
+  }
+
+  // ====================================================================== Hoja de rendimiento solar
   y = nuevaHoja('Rendimiento solar esperado')
   const generacionMes = evaluacion.generacionPorMes
   const consumoMes = consumo.mensual
@@ -714,7 +861,7 @@ export function construirPropuestaPdf(jsPDF, datos) {
     graficoAhorros(MARGEN + 14, y + 4, UTIL - 16, 30, proyeccion.flujo)
     y += 44
     parrafo(
-      `El costo nivelado indica lo que cuesta producir cada kilovatio-hora con el sistema propio a lo largo de su vida útil: ${moneda} ${num(proyeccion.lcoe, 3)}/kWh, frente a los ${moneda} ${num(consumo.tarifa, 3)}/kWh que hoy se pagan a la distribuidora.`,
+      `El costo nivelado indica lo que cuesta producir cada kilovatio-hora con el sistema propio a lo largo de su vida útil: ${moneda} ${num(proyeccion.lcoe, 3)}/kWh, frente a los ${moneda} ${num(consumo.tarifa, 3)}/kWh ${datos.arquitectura === 'off_grid' ? 'estimados como costo de la energía en el sitio, que no cuenta con servicio de la red' : 'que hoy se pagan a la distribuidora'}.`,
       y,
       { tamano: 8.5 },
     )

@@ -82,6 +82,8 @@ export default function Dimensionador() {
     maximoTecho,
     excesoTecho,
     ajustarAlTecho,
+    arquitectura,
+    esBifacial,
     paneles,
     inversoresCompatibles,
     marcasPanel,
@@ -248,11 +250,19 @@ export default function Dimensionador() {
 
         {evaluacion && (
           <div className="mt-3 grid gap-3">
-            <Check estado={ratio.estado} titulo="Ratio DC/AC">
-              {ratio.estado === 'pendiente'
-                ? 'Define paneles e inversor.'
-                : `${fmt(ratio.valor, 2)} · rango recomendado ${RATIO_DC_AC.min.toFixed(2)} – ${RATIO_DC_AC.max.toFixed(2)}.`}
-            </Check>
+            {evaluacion.potencia ? (
+              <Check estado={evaluacion.potencia.estado} titulo="Potencia para las cargas">
+                {evaluacion.potencia.estado === 'pendiente'
+                  ? 'Define el inversor.'
+                  : `${fmt(evaluacion.potenciaAcKw, 2)} kW AC frente a ${fmt(evaluacion.potencia.requeridaKw, 2)} kW que piden las cargas (pico simultáneo + 25 %). DC/AC ${fmt(ratio.valor, 2)}.`}
+              </Check>
+            ) : (
+              <Check estado={ratio.estado} titulo="Ratio DC/AC">
+                {ratio.estado === 'pendiente'
+                  ? 'Define paneles e inversor.'
+                  : `${fmt(ratio.valor, 2)} · rango recomendado ${RATIO_DC_AC.min.toFixed(2)} – ${RATIO_DC_AC.max.toFixed(2)}.`}
+              </Check>
+            )}
 
             <Check estado={strings.estado} titulo="Voc en frío y strings">
               {strings.vocFrio == null ? (
@@ -281,6 +291,8 @@ export default function Dimensionador() {
                   : `${fmt(techo.areaNecesaria)} m² de paneles frente a ${fmt(techo.areaUtil)} m² útiles (${FRACCION_TECHO_UTIL * 100} % del techo). Caben hasta ${techo.maxPaneles} paneles.`}
             </Check>
 
+            {arquitectura !== 'off_grid' && (
+            <>
             <Check estado={interconexion.acometida.estado} titulo="Interruptor principal (IP)">
               {interconexion.acometida.estado === 'pendiente'
                 ? 'Ingresa el interruptor principal y define el inversor.'
@@ -302,10 +314,12 @@ export default function Dimensionador() {
                         : ''
                   }`}
             </Check>
+            </>
+            )}
           </div>
         )}
         <p className="mt-3 text-xs text-ink-dim">
-          Generación anual = kWp × HSP × PR × 365. Corriente AC a {red.voltaje} V con factor de potencia 1. Verificación
+          Generación anual = kWp × HSP × PR × 365{esBifacial ? ` × ${fmt(evaluacion?.factor ?? 1, 2)} (ganancia bifacial)` : ''}. Corriente AC a {red.voltaje} V con factor de potencia 1. Verificación
           preliminar; no sustituye el estudio de interconexión.
         </p>
       </Panel>

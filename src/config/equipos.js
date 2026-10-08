@@ -3,10 +3,18 @@ import { BatteryCharging, Cpu, PanelTop, Power } from 'lucide-react'
 // Fuente única de las categorías de equipos: de aquí salen las pestañas, las columnas de la tabla
 // y el mapeo de encabezados al importar un CSV. Las claves son las del esquema de
 // catálogo (datos/*.csv, que arranca de lo que genera scripts/procesar_fichas.js).
-// type: 'text' | 'number' | 'list' (varios valores separados por ";") | 'enum' (se guarda en mayúsculas)
+// type: 'text' | 'number' | 'list' (varios valores separados por ";") | 'enum' (se guarda en mayúsculas;
+//       con `options` es una lista cerrada de [valor, etiqueta] y se edita con un desplegable)
 // tableHidden: el campo se importa pero se muestra combinado en otra columna (ver tableLabel / format).
 const MARCA = { key: 'marca', label: 'Marca', type: 'text', aliases: ['brand', 'fabricante'] }
 const MODELO = { key: 'modelo', label: 'Modelo', type: 'text', aliases: ['model'] }
+
+// Clasificaciones del catálogo. Un valor vacío significa "sin clasificar": se completa a mano en Equipos.
+export const TECNOLOGIAS_PANEL = [['MONOFACIAL', 'Monofacial'], ['BIFACIAL', 'Bifacial']]
+export const TIPOS_SISTEMA = [['ON_GRID', 'On-Grid'], ['OFF_GRID', 'Off-Grid'], ['HIBRIDO', 'Híbrido']]
+export const TOPOLOGIAS = [['MICRO', 'Microinversor'], ['STRING', 'String']]
+export const SOPORTES_BATERIA = [['NINGUNA', 'Sin batería'], ['LOW_VOLTAGE', 'Bajo voltaje (LV)'], ['HIGH_VOLTAGE', 'Alto voltaje (HV)']]
+export const RANGOS_BATERIA = [['LOW_VOLTAGE', 'Bajo voltaje (LV)'], ['HIGH_VOLTAGE', 'Alto voltaje (HV)']]
 
 export const CATEGORIES = [
   {
@@ -41,6 +49,7 @@ export const CATEGORIES = [
       { key: 'ancho_mm', label: 'Ancho', unit: 'mm', type: 'number', aliases: ['w', 'width'], tableHidden: true },
       { key: 'eficiencia', label: 'Eficiencia', unit: '%', type: 'number', aliases: ['efficiency'] },
       { key: 'peso_kg', label: 'Peso', unit: 'kg', type: 'number', aliases: ['weight'] },
+      { key: 'tipo_tecnologia', label: 'Tecnología', type: 'enum', options: TECNOLOGIAS_PANEL, aliases: ['tecnologia', 'bifacial'] },
     ],
   },
   {
@@ -67,6 +76,9 @@ export const CATEGORIES = [
       { key: 'mppt_num', label: 'N° MPPTs', type: 'number', aliases: ['mppt', 'mppts', 'nmppt', 'numeromppts'] },
       { key: 'isc_max_mppt', label: 'Isc max por MPPT', unit: 'A', type: 'number', aliases: ['iscmax'] },
       { key: 'corriente_max_salida_ac', label: 'I salida AC max', unit: 'A', type: 'number', aliases: ['iacmax'] },
+      { key: 'topologia', label: 'Micro / String', type: 'enum', options: TOPOLOGIAS, aliases: ['topologia', 'clase'] },
+      { key: 'tipo_sistema', label: 'Tipo de sistema', type: 'enum', options: TIPOS_SISTEMA, aliases: ['sistema'] },
+      { key: 'tipo_bateria_soporte', label: 'Batería que admite', type: 'enum', options: SOPORTES_BATERIA, aliases: ['bateria'] },
     ],
   },
   {
@@ -82,6 +94,8 @@ export const CATEGORIES = [
       { key: 'tipo_quimica', label: 'Química', type: 'text', aliases: ['quimica', 'chemistry'] },
       { key: 'acoplamiento', label: 'Acoplamiento', type: 'enum', aliases: ['tipodeacoplamiento', 'acople'] },
       { key: 'potencia_max_descarga_kw', label: 'Descarga max', unit: 'kW', type: 'number', aliases: ['potenciadescarga'] },
+      { key: 'rango_voltaje', label: 'Rango de voltaje', type: 'enum', options: RANGOS_BATERIA, aliases: ['rango'] },
+      { key: 'dod_recomendado', label: 'DoD recomendado', unit: '%', type: 'number', aliases: ['dod'] },
     ],
   },
   {
@@ -98,6 +112,11 @@ export const CATEGORIES = [
     ],
   },
 ]
+
+// Columnas que acompañan a cada ficha además de sus campos:
+//   ocr: leída de un PDF escaneado · activo: 'no' la desactiva
+//   datos_web: campos cuyo valor se tomó de internet y no de la ficha · fuente_web: de dónde
+export const COLUMNAS_META = ['ocr', 'activo', 'datos_web', 'fuente_web']
 
 export const getCategory = (id) => CATEGORIES.find((category) => category.id === id)
 

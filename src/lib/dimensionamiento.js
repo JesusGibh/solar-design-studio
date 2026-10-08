@@ -72,14 +72,25 @@ export function maxPanelesEnTecho(areaTechoM2, panel) {
 // red, DC/AC entre 1.10 y 1.30, sin superar el interruptor principal ni el transformador.
 // Si ninguno cumple todo, devuelve el más cercano en DC/AC junto con el `motivo`, para mostrar la alerta.
 // Con `id` se usa el modelo que eligió el usuario y solo se calcula cuántas unidades hacen falta.
-export function elegirInversor({ inversores, datosRed, kwp, marca = '', id = '' }) {
+// Con `potenciaMinKw` (sistema aislado con tabla de cargas) manda la potencia que piden las cargas:
+// se elige el conjunto más pequeño que la alcanza, sin exigir el rango de DC/AC.
+export function elegirInversor({ inversores, datosRed, kwp, marca = '', id = '', potenciaMinKw = 0 }) {
   const red = getRed(datosRed.tension)
   const deMarca = marca ? ` de ${marca}` : ''
   const elegido = id && inversores.find((inversor) => inversor.id === id && esCompatible(inversor, red) && inversor.potencia_ac_nominal_kw > 0)
   const compatibles = elegido
     ? [elegido]
     : candidatos(inversores, marca).filter((inversor) => esCompatible(inversor, red) && inversor.potencia_ac_nominal_kw > 0)
-  if (compatibles.length === 0) return { inversor: null, cantidad: 0, motivo: `No hay inversores${deMarca} en el catálogo para ${red.label}.` }
+  if (compatibles.length === 0) return { inversor: null, cantidad: 0, motivo: `No hay inversores${deMarca} de este tipo en el catálogo para ${red.label}.` }
+
+  if (potenciaMinKw > 0) {
+    const opciones = compatibles
+      .map((inversor) => ({ inversor, cantidad: Math.ceil(potenciaMinKw / inversor.potencia_ac_nominal_kw - 1e-9) }))
+      .filter((opcion) => opcion.cantidad <= MAX_INVERSORES_AUTO || elegido)
+      .sort((p, q) => p.cantidad - q.cantidad || p.inversor.potencia_ac_nominal_kw - q.inversor.potencia_ac_nominal_kw)
+    if (opciones.length) return { inversor: opciones[0].inversor, cantidad: opciones[0].cantidad, motivo: null }
+    return { inversor: null, cantidad: 0, motivo: `Ningún inversor${deMarca} alcanza los ${potenciaMinKw.toFixed(1)} kW que piden las cargas con ${MAX_INVERSORES_AUTO} unidades o menos.` }
+  }
 
   const centro = (RATIO_DC_AC.min + RATIO_DC_AC.max) / 2
   const enRatio = []
@@ -191,17 +202,22 @@ function evaluarTecho({ panel, numPaneles, areaTecho, maxPanelesTecho }) {
 
 // Evalúa un sistema concreto (panel × cantidad + inversor × cantidad). Lo usan ambos modos.
 // `cobertura` es generación anual / consumo anual (1 = 100 %).
-export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, perfil, tempMin, areaTecho, maxPanelesTecho, datosRed }) {
+// `factor` multiplica la generación (ganancia de los paneles bifaciales; 1 = sin ganancia).
+// `potenciaMinKw` es la potencia que piden las cargas de un sistema aislado: si viene, el inversor se
+// juzga por alcanzarla y el DC/AC queda solo como dato.
+export function evaluarSistema({ panel, numPaneles, inversor, cantidad = 1, anualKwh, hsp, pr, perfil, tempMin, areaTecho, maxPanelesTecho, datosRed, factor = 1, potenciaMinKw = 0 }) {
   const kwp = panel && numPaneles ? (panel.potencia_wp * numPaneles) / 1000 : null
-  const generacionAnualKwh = kwp ? generacionAnual(kwp, hsp, pr) : null
+  const generacionAnualKwh = kwp ? generacionAnual(kwp, hsp, pr) * factor : null
   const potenciaAcKw = inversor ? inversor.potencia_ac_nominal_kw * cantidad : null
   const ratioValor = kwp && potenciaAcKw ? kwp / potenciaAcKw : null
-  const enRango = ratioValor >= RATIO_DC_AC.min && ratioValor <= RATIO_DC_AC.max
+  const enRango = potenciaMinKw > 0 || (ratioValor >= RATIO_DC_AC.min && ratioValor <= RATIO_DC_AC.max)
   return {
     kwp,
     generacionAnualKwh,
     generacionMensualKwh: generacionAnualKwh && generacionAnualKwh / 12,
-    generacionPorMes: kwp ? generacionPorMes(kwp, hsp, pr, perfil) : null,
+    generacionPorMes: kwp ? generacionPorMes(kwp, hsp, pr, perfil).map((kwh) => kwh * factor) : null,
+    factor,
+    potencia: potenciaMinKw > 0 ? { estado: potenciaAcKw == null ? 'pendiente' : potenciaAcKw >= potenciaMinKw - 1e-9 ? 'ok' : 'danger', requeridaKw: potenciaMinKw } : null,
     areaCaptacionM2: areaPanelM2(panel) && numPaneles ? areaPanelM2(panel) * numPaneles : null,
     cobertura: generacionAnualKwh && anualKwh ? generacionAnualKwh / anualKwh : null,
     potenciaAcKw,
@@ -233,12 +249,14 @@ export function dimensionarAuto({
   marcaInversor = '',
   panelId = '',
   inversorId = '',
+  factor = 1,
+  potenciaMinKw = 0,
 }) {
   if (!anualKwh) return null
   const panel = elegirPanel(paneles, marcaPanel, panelId)
   if (!panel) return { sinPanel: true }
 
-  const kwpRequerido = potenciaDcRequerida(anualKwh, cobertura, hsp, pr)
+  const kwpRequerido = potenciaDcRequerida(anualKwh, cobertura, hsp, pr) / factor
   const numRequeridos = Math.ceil((kwpRequerido * 1000) / panel.potencia_wp - 1e-9)
   const maximoTecho = maxPanelesTecho ?? maxPanelesEnTecho(areaTecho, panel)
   const excedeTecho = maximoTecho != null && numRequeridos > maximoTecho
@@ -248,7 +266,7 @@ export function dimensionarAuto({
 
   const eleccion =
     numPaneles > 0
-      ? elegirInversor({ inversores, datosRed, kwp, marca: marcaInversor, id: inversorId })
+      ? elegirInversor({ inversores, datosRed, kwp, marca: marcaInversor, id: inversorId, potenciaMinKw })
       : { inversor: null, cantidad: 0, motivo: 'El techo no admite ningún panel.' }
   return {
     panel,
@@ -274,6 +292,8 @@ export function dimensionarAuto({
       areaTecho,
       maxPanelesTecho,
       datosRed,
+      factor,
+      potenciaMinKw,
     }),
   }
 }

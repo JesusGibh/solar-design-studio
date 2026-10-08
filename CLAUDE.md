@@ -25,6 +25,7 @@ van en español.
 | `npm run build` | Compila a `dist/`. |
 | `npm run fichas` | Extrae las fichas PDF de `fichas_tecnicas/` a `src/data/catalogo_equipos.json` y `.csv`. |
 | `npm run datos` | Crea lo que falte en `datos/`, integra `datos/recibidas/` y muestra un resumen. Con `-- --fichas` añade los equipos nuevos extraídos. |
+| `npm run clasificar` | Lee las fichas PDF y propone tipo de sistema, batería admitida y tecnología del panel. Con `-- --aplicar` rellena los campos vacíos de `datos/`. |
 | `npm run respaldo` | Copia `datos/` con fecha a OneDrive y Google Drive (conserva 30). |
 | `npm run publicar` | Respalda, compila con la ruta base del repositorio y sube a `gh-pages`. |
 
@@ -46,6 +47,11 @@ y el mensaje en un archivo (`-F`).
   `src/lib/cifrado.js`). Iniciar sesión es descifrarla (`src/lib/sesion.js`).
 - Nunca subir a GitHub ni escribir en el código: claves, la URL del Apps Script ni datos de clientes.
 - Esquema de campos por categoría: `src/config/equipos.js` (fuente única de pestañas, columnas y CSV).
+- Procedencia de los datos: lo que no sale de la ficha se anota en la columna `datos_web` (campos) y
+  `fuente_web` (URL), y la tabla de Equipos lo marca con un icono. Al completar datos desde internet
+  solo se rellenan campos vacíos y siempre se registra la fuente.
+- Reglas fijadas por el usuario: las series Growatt SPE y SPF son `OFF_GRID`. En un sistema aislado no
+  hay transformador, interruptor principal ni factura: el costo del kWh es un estimado del lugar.
 
 ## Reglas eléctricas y de dimensionamiento
 
@@ -57,6 +63,14 @@ y el mensaje en un archivo (`-F`).
   PR, relación DC/AC 1,10–1,30, modo automático o manual con elección de marca y modelo.
 - Finanzas (`src/lib/finanzas.js`): precio en $/Wp instalado, flujo de caja a 25 años, payback, ROI,
   TIR, VAN y LCOE. El ahorro se limita al consumo del sitio.
+- Arquitectura del sistema (`src/lib/almacenamiento.js`, `src/components/Arquitectura.jsx`): on-grid,
+  off-grid o híbrido. On-grid ofrece solo inversores `ON_GRID`; los que admiten batería sirven para
+  aislado o híbrido (si la ficha no dice cuál, se ofrecen en ambos). Aislado: batería obligatoria y
+  opción de dimensionar con tabla de cargas (inversor ≥ pico simultáneo × 1,25; banco = consumo diario ×
+  días de autonomía ÷ DoD). Inversor y batería deben coincidir en LV / HV. Paneles bifaciales: ganancia
+  ajustable sobre la generación. La clasificación de un equipo vacía significa «sin clasificar».
+- Simulación de 24 h del almacenamiento: curvas de referencia (campana solar y perfil horario de
+  consumo), no mediciones. Los ciclos de vida mostrados son el valor típico de LFP, rotulado como tal.
 - La factura del cliente (PDF) rellena cliente, dirección, tarifa e historial de consumo (`src/lib/factura/`).
 
 ## Módulos
@@ -67,7 +81,8 @@ y el mensaje en un archivo (`-F`).
 3. **Diseño de Techo & Arreglo**: trazado del techo sobre el mapa, retranqueo, acomodo de paneles según
    sus dimensiones reales (largo × ancho) y pasillos de inspección. Visor 3D con terreno satelital,
    edificio extruido, cotas en metros y controles de agrupación dentro de la escena; su captura va al PDF.
-4. **Propuesta, Gráficas & ROI**: PDF de 6 páginas, vista previa y descarga. Moneda fija `B/.`.
+4. **Propuesta, Gráficas & ROI**: PDF de 7–8 páginas (portada con precio, ficha técnica de equipos y,
+   con baterías, simulación de 24 h), vista previa y descarga. Moneda fija `B/.`.
 5. **Historial de Propuestas**.
 
 ## Usuarios, marcas y propuestas
@@ -81,8 +96,11 @@ y el mensaje en un archivo (`-F`).
 - Correlativo único `PROP-AAAA-NNNN` (`src/lib/numeracion.js`). Lo reparte la hoja de Google Sheets;
   sin ella, `datos/propuestas.csv` en local o un contador del navegador.
 - Todos ven todas las propuestas. Solo quien la creó la edita; los demás la ven o la copian como nueva.
-- Hoja compartida (`google-apps-script/Codigo.gs`, `src/lib/nube.js`): guarda propuestas, catálogo,
-  numeración y los PDF en la carpeta de Drive «Propuestas PDF». Si cambia `Codigo.gs`, el dueño debe
+- Hoja compartida (`google-apps-script/Codigo.gs`, `src/lib/nube.js`): es la fuente de verdad de
+  propuestas y catálogo cuando está conectada (`src/lib/historial.js`, `src/lib/catalogoNube.js`).
+  Guarda también la numeración, los PDF (carpeta de Drive «Propuestas PDF») y la vista previa del
+  render 3D («Renders 3D»). Sin conexión se trabaja con la copia del navegador y lo pendiente se
+  sube al sincronizar. En local, además, todo se escribe en `datos/` como copia. Si cambia `Codigo.gs`, el dueño debe
   pegarlo y publicar una **nueva versión** de la misma implementación (la URL no cambia).
 
 ## Forma de trabajo
@@ -94,5 +112,5 @@ y el mensaje en un archivo (`-F`).
 ## Pendientes conocidos
 
 - Logo de Kilowattia; fichas de RSD (0 registros); lectura de facturas sin probar con una factura real de Naturgy.
-- El render 3D no se guarda en el historial.
-- En el sitio publicado, los cambios de fichas quedan en el navegador hasta hacerlos en local y publicar.
+- Las ediciones de fichas van a la hoja; los CSV de `datos/` solo se actualizan trabajando en local.
+  Un cambio hecho en Excel no llega a la hoja hasta pulsar «Enviar el catálogo de equipos a la hoja».

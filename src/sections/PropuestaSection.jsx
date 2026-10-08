@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, Copy, Download, FileText, LoaderCircle, Presentation, Save, TrendingUp, Wallet } from 'lucide-react'
+import { BarChart3, BatteryCharging, Copy, Download, FileText, LoaderCircle, Presentation, Save, TrendingUp, Wallet } from 'lucide-react'
 import Panel from '../components/Panel.jsx'
 import VistaPreviaPropuesta from '../components/VistaPreviaPropuesta.jsx'
 import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
-import { GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
+import { Grafico24h, GraficoFlujo, GraficoMensual } from '../components/graficos.jsx'
 import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
 import { leerProyecto } from '../hooks/useProyecto.js'
 import { getAuthor } from '../config/authors.js'
@@ -53,7 +53,7 @@ function TextField({ label, value, onChange, placeholder }) {
 }
 
 export default function PropuestaSection() {
-  const { sistema, resumen, red, techo, ocupados, baterias, parametros, proyecto, actualizar } = useDimensionamiento()
+  const { sistema, resumen, red, techo, ocupados, parametros, arquitectura, conBateria, almacenamiento, simulacion, proyecto, actualizar } = useDimensionamiento()
   const { finanzas, propuesta } = proyecto
   const [descarga, setDescarga] = useState({ estado: 'lista' }) // 'lista' | 'generando' | 'error'
   const [vistaPrevia, setVistaPrevia] = useState(false)
@@ -93,7 +93,7 @@ export default function PropuestaSection() {
   // Guarda la propuesta en el historial (ver lib/historial.js). Con el mismo número, actualiza.
   const guardar = async () => {
     if (soloLectura) return
-    const resultado = await guardarPropuesta(registroDe({ proyecto, sistema, proyeccion, marca, autor }))
+    const resultado = await guardarPropuesta(registroDe({ proyecto, sistema, proyeccion, marca, autor }), captura)
     const destinos = [resultado.enBase ? 'en la base de datos' : 'en el historial de este navegador', resultado.enNube && 'en Google Sheets'].filter(Boolean)
     setGuardado(
       resultado.error
@@ -102,11 +102,11 @@ export default function PropuestaSection() {
     )
   }
 
-  const bateria = baterias.find((equipo) => equipo.id === finanzas.bateriaId)
-  const cantidadBaterias = Math.max(1, Math.floor(aNumero(finanzas.bateriaCantidad) ?? 1))
-  const capacidadKwh = bateria?.capacidad_kwh ? bateria.capacidad_kwh * cantidadBaterias : null
-  // Autonomía al consumo promedio: kWh almacenados ÷ potencia media (kWh/mes ÷ 730 h).
-  const autonomiaHoras = capacidadKwh && resumen.promedioKwh ? capacidadKwh / (resumen.promedioKwh / 730) : null
+  // El banco de baterías se define en Consumo (arquitectura del sistema); aquí solo se muestra y se cotiza.
+  const bateria = almacenamiento?.bateria ?? null
+  const cantidadBaterias = almacenamiento?.unidades ?? 0
+  const capacidadKwh = almacenamiento?.capacidadKwh ?? null
+  const autonomiaHoras = simulacion?.autonomiaHoras ?? null
 
   const precioWp = aNumero(finanzas.precioWp)
   const inflacion = porcentaje(finanzas.inflacion, DEFECTOS_FINANZAS.inflacion)
@@ -119,7 +119,7 @@ export default function PropuestaSection() {
     consumoAnualKwh: resumen.anualKwh,
     tarifa: resumen.tarifa,
     precioWp,
-    costoAdicional: aNumero(finanzas.costoBaterias) ?? 0,
+    costoAdicional: conBateria ? (aNumero(finanzas.costoBaterias) ?? 0) : 0,
     inflacion,
     degradacion,
     descuento,
@@ -176,6 +176,9 @@ export default function PropuestaSection() {
         red: { label: red.label, voltaje: red.voltaje, interruptorA: proyecto.red.interruptorA, transformadorKva: proyecto.red.transformadorKva },
         techo: techo && { ...techo, inclinacion: Number(proyecto.techo.inclinacion) || 0, orientacion: proyecto.techo.orientacion },
         bateria: bateria ? { equipo: bateria, cantidad: cantidadBaterias, capacidadKwh, autonomiaHoras } : null,
+        arquitectura,
+        almacenamiento,
+        simulacion,
         consumo: resumen,
         precioWp,
       }),
@@ -380,36 +383,16 @@ export default function PropuestaSection() {
                 placeholder="0.95"
                 onChange={(valor) => cambiar({ precioWp: valor })}
               />
-              <NumberField
-                label="Costo adicional (baterías)"
-                unit="$"
-                value={finanzas.costoBaterias}
-                placeholder="0"
-                hint="Se suma al costo del sistema FV."
-                onChange={(costoBaterias) => cambiar({ costoBaterias })}
-              />
-              <label className="block">
-                <span className={labelClass}>Batería (opcional)</span>
-                <select value={bateria ? finanzas.bateriaId : ''} onChange={(event) => cambiar({ bateriaId: event.target.value })} className={campoTexto}>
-                  <option value="">Sin baterías</option>
-                  {baterias.map((equipo) => (
-                    <option key={equipo.id} value={equipo.id}>
-                      {equipo.marca} {equipo.modelo} · {equipo.capacidad_kwh} kWh
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <NumberField
-                label="N° de baterías"
-                value={finanzas.bateriaCantidad}
-                placeholder="1"
-                hint={
-                  capacidadKwh
-                    ? `${fmt(capacidadKwh, 2)} kWh${autonomiaHoras ? ` · ~${fmt(autonomiaHoras, 1)} h de autonomía al consumo promedio` : ''}`
-                    : undefined
-                }
-                onChange={(bateriaCantidad) => cambiar({ bateriaCantidad })}
-              />
+              {conBateria && (
+                <NumberField
+                  label="Costo del sistema de almacenamiento"
+                  unit="$"
+                  value={finanzas.costoBaterias}
+                  placeholder="0"
+                  hint={bateria ? `${cantidadBaterias} × ${bateria.modelo} · ${fmt(capacidadKwh, 1)} kWh. Se suma al costo del sistema FV.` : 'Elige la batería en Consumo. Se suma al costo del sistema FV.'}
+                  onChange={(costoBaterias) => cambiar({ costoBaterias })}
+                />
+              )}
               <NumberField
                 label="Inflación energética"
                 unit="%/año"
@@ -495,6 +478,25 @@ export default function PropuestaSection() {
               <p className="text-sm text-ink-muted">Ingresa el consumo y define el sistema para ver la comparación mensual.</p>
             )}
           </Panel>
+
+          {simulacion && almacenamiento?.bateria && (
+            <Panel title="Simulación de 24 horas del almacenamiento" icon={BatteryCharging}>
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Stat label="Autonomía estimada" value={fmt(simulacion.autonomiaHoras, 1)} unit="h" />
+                <Stat label="Capacidad útil" value={fmt(almacenamiento.utilKwh, 1)} unit="kWh" />
+                <Stat label="Descarga máxima" value={almacenamiento.descargaKw ? fmt(almacenamiento.descargaKw, 1) : '—'} unit={almacenamiento.descargaKw ? 'kW' : ''} />
+                <Stat label="Ciclos de vida" value={almacenamiento.ciclos ? `~${fmt(almacenamiento.ciclos, 0)}` : '—'} unit={almacenamiento.ciclos ? 'típico LFP' : ''} />
+              </div>
+              <Grafico24h horas={simulacion.horas} socMinimo={100 - almacenamiento.dod} />
+              <p className="mt-2 text-xs text-ink-dim">
+                Día típico: generación en campana de 6:00 a 18:00 y consumo según el perfil horario elegido en Consumo. La autonomía es la energía útil del banco frente
+                a la demanda media, sin sol ni red.
+                {simulacion.sinCubrirKwh > 0.05 &&
+                  ` En este día quedan ${fmt(simulacion.sinCubrirKwh, 1)} kWh sin cubrir por el sol y la batería${arquitectura === 'off_grid' ? ': amplía el arreglo o el banco.' : ', que aporta la red.'}`}
+                {almacenamiento.ciclos ? ' Los ciclos de vida son la referencia habitual de las baterías LFP, no un dato de la ficha.' : ''}
+              </p>
+            </Panel>
+          )}
 
           <Panel title="Flujo de caja acumulado a 25 años" icon={TrendingUp}>
             {proyeccion ? (

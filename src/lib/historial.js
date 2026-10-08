@@ -1,13 +1,18 @@
 import { useSyncExternalStore } from 'react'
 import { archivo, archivoActivo } from './archivo.js'
 import { nube, nubeActiva } from './nube.js'
+import { comprimir, guardarRender, leerRender } from './renders.js'
 import { leerSesion, suscribirSesion } from './sesion.js'
 
 // Historial de propuestas guardadas. Cada registro lleva un resumen para la lista, el usuario que la
 // creó y el proyecto completo (`datos`) para poder reabrirlo.
-// La fuente es la base de datos (datos/propuestas.csv): trabajando en local se lee y se escribe en
-// ella directamente; en el sitio publicado llega la copia incluida al publicar y lo nuevo se guarda
-// en este navegador hasta exportarlo. Los registros que vienen de la base llevan origen: 'base'.
+// Con la hoja de Google Sheets conectada, ella es la fuente de verdad: la lista se sincroniza al
+// entrar y al abrir Historial, y lo guardado sin conexión (pendiente: true) se sube en la siguiente
+// sincronización. Sin hoja, la fuente es la base de datos (datos/propuestas.csv): en local se lee y
+// se escribe directamente; en el sitio publicado llega la copia incluida al publicar.
+// origen: 'nube' (viene de la hoja) | 'base' (viene de datos/) | sin origen (solo en este navegador).
+// La vista previa del render 3D viaja aparte (ver renders.js): en datos.render_3d_preview dentro de
+// datos/propuestas/<id>.json y, para la hoja, como imagen en Drive.
 const CLAVE = 'sds.historial.v1'
 const CLAVE_ELIMINADAS = 'sds.historial.eliminadas'
 const oyentes = new Set()
@@ -53,10 +58,19 @@ export const useHistorial = () => useSyncExternalStore(suscribir, () => lista)
 export const esAjena = (propuesta) => Boolean(propuesta?.usuario) && propuesta.usuario !== leerSesion().perfil?.usuario
 export const buscarPropuesta = (id) => lista.find((propuesta) => propuesta.id === id)
 
+// El render pesa demasiado para localStorage: se pasa a IndexedDB y el registro queda liviano.
+function aligerar(propuesta) {
+  const render = propuesta.datos?.render_3d_preview
+  if (!render) return propuesta
+  guardarRender(propuesta.id, render)
+  const { render_3d_preview: _render, ...datos } = propuesta.datos
+  return { ...propuesta, datos }
+}
+
 // Mezcla lo que hay en la base con lo de este navegador. De cada propuesta queda la versión más
 // reciente; las que vinieron de la base y ya no están en ella (se borró su fila) desaparecen.
 function fusionar(deLaBase) {
-  const base = deLaBase.filter((propuesta) => !eliminadas.includes(propuesta.id)).map((propuesta) => ({ ...propuesta, origen: 'base' }))
+  const base = deLaBase.filter((propuesta) => !eliminadas.includes(propuesta.id)).map((propuesta) => ({ ...aligerar(propuesta), origen: 'base' }))
   const porId = new Map(base.map((propuesta) => [propuesta.id, propuesta]))
   for (const local of lista) {
     const remota = porId.get(local.id)
@@ -80,9 +94,9 @@ const alCambiarSesion = async () => {
   if (usuario === usuarioCargado) return // la sesión cambió por otra cosa (p. ej. se editó una ficha)
   usuarioCargado = usuario
   if (!usuario) return
-  await cargarDeLaBase().catch(() => fusionar(leerSesion().propuestas))
-  // Con la hoja compartida conectada, lo que hayan guardado los demás llega al entrar.
-  if (nubeActiva()) sincronizarHistorial().catch(() => {})
+  // Con la hoja conectada manda ella; si no hay conexión se sigue con lo que ya hay en este navegador.
+  if (nubeActiva()) await sincronizarHistorial().catch(() => {})
+  else await cargarDeLaBase().catch(() => fusionar(leerSesion().propuestas))
 }
 suscribirSesion(alCambiarSesion)
 alCambiarSesion()
@@ -107,33 +121,59 @@ export function registroDe({ proyecto, sistema, proyeccion, marca, autor }) {
 }
 
 // Guarda (o actualiza, si el número ya existe). Siempre queda en este navegador; además va a la base
-// de datos si se trabaja en local y a Google Sheets si está conectada.
+// de datos si se trabaja en local y a Google Sheets si está conectada. `captura` es la captura 3D
+// vigente ({ imagen, paneles }) o null: se guarda comprimida como vista previa de la propuesta.
 // Devuelve { enBase, enNube, error }: `error` describe lo que falló fuera del navegador.
-export async function guardarPropuesta(registro) {
+export async function guardarPropuesta(registro, captura = null) {
   if (esAjena(buscarPropuesta(registro.id))) return { enBase: false, enNube: false, error: 'Esta propuesta es de otro usuario: cópiala como nueva para modificarla.', ajena: true }
   const pdf = buscarPropuesta(registro.id)?.pdf
   const propia = { ...registro, usuario: leerSesion().perfil?.usuario ?? '', ...(pdf && { pdf }) }
   const errores = []
   let enBase = false
   let enNube = false
+  let render = null
+  try {
+    if (captura?.imagen) render = { imagen: await comprimir(captura.imagen), paneles: captura.paneles }
+  } catch {
+    // Sin vista previa: la propuesta se guarda igual.
+  }
+  await guardarRender(propia.id, render)
   if (archivoActivo) {
     try {
-      await archivo.guardar(propia)
+      await archivo.guardar(render ? { ...propia, datos: { ...propia.datos, render_3d_preview: render } } : propia)
       enBase = true
     } catch (error) {
       errores.push(error.message)
     }
   }
-  fijar([enBase ? { ...propia, origen: 'base' } : propia, ...lista.filter((propuesta) => propuesta.id !== propia.id)])
   if (nubeActiva()) {
     try {
       await nube.guardar(propia)
       enNube = true
     } catch (error) {
-      errores.push(`Google Sheets: ${error.message}`)
+      errores.push(error.message === 'Failed to fetch' ? 'sin conexión con la hoja; se subirá sola al volver la conexión' : `Google Sheets: ${error.message}`)
     }
+    // La imagen va aparte: no cabe en una celda de la hoja.
+    if (enNube && render) await nube.guardarRender(propia.id, render).catch((error) => errores.push(`Render 3D en Drive: ${/desconocida/i.test(error.message) ? 'actualiza el script de la hoja' : error.message}`))
   }
+  // Si la hoja está conectada y no respondió, queda pendiente y se sube en la próxima sincronización.
+  const estado = enNube ? { origen: 'nube' } : nubeActiva() ? { pendiente: true } : enBase ? { origen: 'base' } : {}
+  fijar([{ ...propia, ...estado }, ...lista.filter((propuesta) => propuesta.id !== propia.id)])
   return { enBase, enNube, error: errores.join(' ') || undefined }
+}
+
+// Vista previa del render 3D de una propuesta guardada, o null: primero la de este navegador y,
+// si no está, la de la hoja compartida.
+export async function renderDePropuesta(id) {
+  const local = await leerRender(id)
+  if (local || !nubeActiva()) return local
+  try {
+    const remoto = await nube.leerRender(id)
+    if (remoto) await guardarRender(id, remoto)
+    return remoto
+  } catch {
+    return null
+  }
 }
 
 // Sube el PDF de una propuesta a la carpeta de Drive de la hoja y anota su enlace en el historial.
@@ -152,15 +192,29 @@ export async function eliminarPropuesta(id) {
     guardarLocal(CLAVE_ELIMINADAS, eliminadas)
   }
   fijar(lista.filter((propuesta) => propuesta.id !== id))
+  await guardarRender(id, null)
   if (nubeActiva()) await nube.eliminar(id)
 }
 
-// Trae las propuestas de la hoja de Google Sheets. Lo de la hoja manda; lo que solo existe aquí se conserva.
-export async function sincronizarHistorial() {
-  const remotas = (await nube.listar()).filter((propuesta) => propuesta.id && propuesta.datos)
-  const ids = new Set(remotas.map((propuesta) => propuesta.id))
-  fijar([...remotas, ...lista.filter((propuesta) => !ids.has(propuesta.id))])
-  return remotas.length
+// Sincroniza con la hoja de Google Sheets, que es la fuente de verdad: la lista queda como la hoja.
+// Antes se suben las propuestas propias guardadas sin conexión. Si la hoja no responde lanza un
+// error y la lista de este navegador no se toca. Devuelve cuántas propuestas hay en la hoja.
+let sincronizando = null
+export function sincronizarHistorial() {
+  sincronizando ??= (async () => {
+    for (const pendiente of lista.filter((propuesta) => propuesta.pendiente && !esAjena(propuesta))) {
+      const { pendiente: _pendiente, origen: _origen, ...registro } = pendiente
+      await nube.guardar(registro)
+      const render = await leerRender(registro.id)
+      if (render) await nube.guardarRender(registro.id, render).catch(() => {})
+    }
+    const remotas = (await nube.listar()).filter((propuesta) => propuesta.id && propuesta.datos)
+    fijar(remotas.map((propuesta) => ({ ...propuesta, origen: 'nube' })))
+    return remotas.length
+  })().finally(() => {
+    sincronizando = null
+  })
+  return sincronizando
 }
 
 // Mayor número de propuesta de un año que se conoce en este navegador.

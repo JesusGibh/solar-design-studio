@@ -69,6 +69,12 @@ export const nube = {
   eliminar: (id) => escribir({ accion: 'eliminar', id }),
   // Sube el PDF (base64) a la carpeta de Drive. Devuelve { url, carpeta }.
   subirPdf: (id, nombre, contenido) => escribir({ accion: 'pdf', id, nombre, contenido }),
+  // Vista previa del render 3D de una propuesta: { imagen, paneles } o null.
+  guardarRender: (id, render) => escribir({ accion: 'render', id, imagen: render.imagen.split(',')[1], paneles: render.paneles }),
+  leerRender: async (id) => (await leer(`render&id=${encodeURIComponent(id)}`)).render ?? null,
+  // Una ficha de equipo: se inserta o se actualiza por su id en la pestaña de su categoría.
+  guardarEquipo: (categoria, equipo, columnas) => escribir({ accion: 'equipo', categoria, equipo, columnas }),
+  eliminarEquipo: (categoria, id) => escribir({ accion: 'equipo-eliminar', categoria, id }),
   leerCatalogo: async () => (await leer('catalogo')).catalogo,
   escribirCatalogo: (catalogo, columnas) => escribir({ accion: 'catalogo', catalogo, columnas }),
 }

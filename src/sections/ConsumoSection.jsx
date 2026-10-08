@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { PlugZap, ReceiptText, SlidersHorizontal } from 'lucide-react'
+import Arquitectura from '../components/Arquitectura.jsx'
 import Dimensionador from '../components/Dimensionador.jsx'
 import Panel from '../components/Panel.jsx'
 import PdfDropzone from '../components/PdfDropzone.jsx'
 import { NumberField, Stat, Toggle, fmt, inputClass, labelClass } from '../components/campos.jsx'
+import { useDimensionamiento } from '../hooks/useDimensionamiento.js'
 import { useProyecto } from '../hooks/useProyecto.js'
 import { MESES, aNumero, resumenConsumo } from '../lib/consumo.js'
 import { PERFILES_SOLARES, PERFIL_POR_DEFECTO } from '../lib/dimensionamiento.js'
@@ -23,6 +25,8 @@ const redondear = (n, decimales) => String(Number(n.toFixed(decimales)))
 export default function ConsumoSection() {
   const { proyecto, actualizar } = useProyecto()
   const { red: datosRed, consumo, dimensionamiento } = proyecto
+  const { esBifacial, usaCargas, arquitectura } = useDimensionamiento()
+  const aislado = arquitectura === 'off_grid'
   const [factura, setFactura] = useState(null)
   const red = getRed(datosRed.tension)
   const resumen = resumenConsumo(consumo)
@@ -101,13 +105,15 @@ export default function ConsumoSection() {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-5">
       <div className="grid grid-cols-1 gap-4 lg:col-span-3">
-        <Panel title="Acometida y red" icon={PlugZap}>
+        <Arquitectura />
+        <Panel title={aislado ? 'Tensión de salida del sistema' : 'Acometida y red'} icon={PlugZap}>
           <fieldset>
-            <legend className={labelClass}>Tensión de servicio</legend>
+            <legend className={labelClass}>{aislado ? 'Tensión que entregará el inversor a las cargas' : 'Tensión de servicio'}</legend>
             <Toggle value={red.id} options={REDES.map((item) => [item.id, item.label])} onChange={(tension) => actualizar('red', { tension })} />
           </fieldset>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {aislado && <p className="mt-2 text-xs text-ink-dim">Sistema aislado: no hay acometida, interruptor principal ni transformador que verificar.</p>}
+          <div className={aislado ? 'hidden' : 'mt-4 grid gap-4 sm:grid-cols-2'}>
             <NumberField
               label="Interruptor principal (IP)"
               unit="A"
@@ -127,7 +133,19 @@ export default function ConsumoSection() {
           </div>
         </Panel>
 
-        <Panel title="Consumo y tarifa" icon={ReceiptText}>
+        <Panel title={aislado ? 'Consumo y costo estimado de la energía' : 'Consumo y tarifa'} icon={ReceiptText}>
+          {usaCargas && (
+            <p className="mb-3 rounded border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-ink">
+              El sistema se está dimensionando con la tabla de cargas. De aquí solo se usa el costo estimado de la energía.
+            </p>
+          )}
+          {aislado && (
+            <p className="mb-1 text-xs text-ink-dim">
+              Un sitio aislado no tiene factura eléctrica. Para estimar el retorno de la inversión indica cuánto costaría el kWh en el lugar (red más cercana, planta
+              eléctrica o combustible).
+            </p>
+          )}
+          {!aislado && (
           <PdfDropzone
             onFiles={leerFactura}
             imagenes
@@ -136,6 +154,7 @@ export default function ConsumoSection() {
             descripcion="Se leen el cliente, la dirección, el consumo, el costo del kWh y el tipo de red, y se cargan en el proyecto y en la propuesta."
             ocupado="Leyendo la factura…"
           />
+          )}
           {factura && (
             <div
               role="status"
@@ -171,10 +190,10 @@ export default function ConsumoSection() {
             </div>
           )}
 
-          <Toggle value={modo} options={MODOS_CONSUMO} onChange={cambiarModo} className="mt-4" />
+          {!usaCargas && <Toggle value={modo} options={aislado ? MODOS_CONSUMO.slice(0, 2) : MODOS_CONSUMO} onChange={cambiarModo} className="mt-4" />}
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {modo === 'mensual' && (
+            {!usaCargas && modo === 'mensual' && (
               <NumberField
                 label="Consumo mensual"
                 unit="kWh/mes"
@@ -184,7 +203,7 @@ export default function ConsumoSection() {
                 onChange={(promedioKwh) => actualizar('consumo', { promedioKwh })}
               />
             )}
-            {modo === 'anual' && (
+            {!usaCargas && modo === 'anual' && (
               <NumberField
                 label="Consumo anual"
                 unit="kWh/año"
@@ -195,20 +214,22 @@ export default function ConsumoSection() {
               />
             )}
             <NumberField
-              label="Costo de la energía"
+              label={aislado ? 'Costo estimado del kWh en el lugar' : 'Costo de la energía'}
               unit="$/kWh"
               value={consumo.tarifa}
               placeholder="0.20"
               hint={
-                modo === 'detallado' && resumen.tarifaCalculada
-                  ? 'Con facturas en la tabla se usa la tarifa calculada de ellas.'
-                  : 'Lo que paga el cliente por cada kWh.'
+                aislado
+                  ? 'Valor de referencia para calcular el retorno; no viene de una factura.'
+                  : modo === 'detallado' && resumen.tarifaCalculada
+                    ? 'Con facturas en la tabla se usa la tarifa calculada de ellas.'
+                    : 'Lo que paga el cliente por cada kWh.'
               }
               onChange={(tarifa) => actualizar('consumo', { tarifa })}
             />
           </div>
 
-          {modo === 'detallado' && (
+          {modo === 'detallado' && !aislado && (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[28rem] text-sm">
                 <thead>
@@ -300,6 +321,16 @@ export default function ConsumoSection() {
                 Reparte la generación anual entre los meses; el total del año no cambia.
               </span>
             </label>
+            {esBifacial && (
+              <NumberField
+                label="Ganancia bifacial"
+                unit="%"
+                value={proyecto.sistema.gananciaBifacial}
+                options={[5, 8, 10, 15]}
+                onChange={(gananciaBifacial) => actualizar('sistema', { gananciaBifacial })}
+                hint="El panel elegido es bifacial: genera entre 5 % y 15 % más según la superficie bajo el arreglo."
+              />
+            )}
           </div>
         </Panel>
       </div>

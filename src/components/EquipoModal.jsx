@@ -34,6 +34,14 @@ export default function EquipoModal({ category, equipo, onGuardar, onClose }) {
       }
     }
     if (!nuevo.marca || !nuevo.modelo) return setError('La marca y el modelo son obligatorios.')
+    if (equipo.datos_web) {
+      const aunDeLaWeb = equipo.datos_web.filter((clave) => aTexto(nuevo[clave]) === aTexto(equipo[clave]))
+      if (aunDeLaWeb.length) nuevo.datos_web = aunDeLaWeb
+      else {
+        delete nuevo.datos_web
+        delete nuevo.fuente_web
+      }
+    }
     setGuardando(true)
     setError('')
     try {
@@ -67,13 +75,24 @@ export default function EquipoModal({ category, equipo, onGuardar, onClose }) {
                 {field.label}
                 {field.unit && ` (${field.unit})`}
               </span>
-              <input
-                type="text"
-                inputMode={field.type === 'number' ? 'decimal' : undefined}
-                value={valores[field.key]}
-                onChange={(event) => setValores((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                className={field.type === 'number' ? inputClass : `${inputClass} font-sans`}
-              />
+              {field.options ? (
+                <select value={valores[field.key]} onChange={(event) => setValores((prev) => ({ ...prev, [field.key]: event.target.value }))} className={`${inputClass} font-sans`}>
+                  <option value="">Sin clasificar</option>
+                  {field.options.map(([valor, etiqueta]) => (
+                    <option key={valor} value={valor}>
+                      {etiqueta}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  inputMode={field.type === 'number' ? 'decimal' : undefined}
+                  value={valores[field.key]}
+                  onChange={(event) => setValores((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                  className={field.type === 'number' ? inputClass : `${inputClass} font-sans`}
+                />
+              )}
             </label>
           ))}
         </div>

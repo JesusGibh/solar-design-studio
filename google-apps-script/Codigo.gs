@@ -6,6 +6,7 @@
  *   - Pestañas "Paneles", "Inversores", "Baterias" y "RSD": el catálogo de equipos.
  *   - Numeración correlativa PROP-AAAA-NNNN, compartida entre todos los dispositivos.
  *   - Carpeta "Propuestas PDF" (junto a la hoja, en Drive): el PDF de cada propuesta descargada.
+ *   - Carpeta "Renders 3D" (junto a la hoja): la vista previa del render de cada propuesta.
  *
  * Instalación (una sola vez):
  *   1. Crea una hoja de cálculo nueva en Google Sheets.
@@ -22,6 +23,7 @@
 const HOJA_PROPUESTAS = 'Propuestas'
 const HOJAS_CATALOGO = { paneles: 'Paneles', inversores: 'Inversores', baterias: 'Baterias', rsd: 'RSD' }
 const CARPETA_PDF = 'Propuestas PDF'
+const CARPETA_RENDERS = 'Renders 3D'
 // "datos" guarda el proyecto completo en JSON (es lo que permite reabrir la propuesta) y "pdf", el
 // enlace al PDF en Drive. Las columnas nuevas se añaden siempre al final.
 const COLUMNAS = ['id', 'fecha', 'usuario', 'cliente', 'direccion', 'marca', 'autor', 'kwp', 'paneles', 'inversor', 'inversion', 'ahorro_anual', 'retorno_anios', 'datos', 'pdf']
@@ -37,6 +39,8 @@ function doGet(e) {
         return { propuestas: leerFilas(hoja(HOJA_PROPUESTAS, COLUMNAS)).map(aPropuesta) }
       case 'catalogo':
         return { catalogo: leerCatalogo() }
+      case 'render':
+        return { render: leerRender(e.parameter.id) }
       default:
         throw new Error('Acción desconocida: ' + e.parameter.accion)
     }
@@ -58,6 +62,15 @@ function doPost(e) {
         return { ok: true }
       case 'pdf':
         return guardarPdf(cuerpo.id, cuerpo.nombre, cuerpo.contenido)
+      case 'render':
+        guardarRender(cuerpo.id, cuerpo.imagen, cuerpo.paneles)
+        return { ok: true }
+      case 'equipo':
+        guardarEquipo(cuerpo.categoria, cuerpo.equipo, cuerpo.columnas)
+        return { ok: true }
+      case 'equipo-eliminar':
+        eliminarEquipo(cuerpo.categoria, cuerpo.id)
+        return { ok: true }
       default:
         throw new Error('Acción desconocida: ' + cuerpo.accion)
     }
@@ -164,32 +177,92 @@ function guardarPropuesta(propuesta) {
   }
 }
 
-// Carpeta de los PDF: se crea junto a la hoja de cálculo la primera vez.
-function carpetaPdf() {
+// Carpeta junto a la hoja de cálculo; se crea la primera vez.
+function carpeta(nombre) {
   const archivo = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId())
   const padres = archivo.getParents()
   const padre = padres.hasNext() ? padres.next() : DriveApp.getRootFolder()
-  const existentes = padre.getFoldersByName(CARPETA_PDF)
-  return existentes.hasNext() ? existentes.next() : padre.createFolder(CARPETA_PDF)
+  const existentes = padre.getFoldersByName(nombre)
+  return existentes.hasNext() ? existentes.next() : padre.createFolder(nombre)
+}
+
+// Se conserva con este nombre para poder ejecutarla a mano y autorizar el acceso a Drive.
+function carpetaPdf() {
+  return carpeta(CARPETA_PDF)
+}
+
+// Vista previa del render 3D (JPEG en base64). El número de paneles va en la descripción del archivo.
+function guardarRender(id, imagen, paneles) {
+  if (!id || !imagen) throw new Error('Faltan datos del render.')
+  const destino = carpeta(CARPETA_RENDERS)
+  const nombre = id + '.jpg'
+  const anteriores = destino.getFilesByName(nombre)
+  while (anteriores.hasNext()) anteriores.next().setTrashed(true)
+  destino.createFile(Utilities.newBlob(Utilities.base64Decode(imagen), 'image/jpeg', nombre)).setDescription(String(paneles || ''))
+}
+
+function leerRender(id) {
+  if (!id) return null
+  const archivos = carpeta(CARPETA_RENDERS).getFilesByName(id + '.jpg')
+  if (!archivos.hasNext()) return null
+  const archivo = archivos.next()
+  return { imagen: 'data:image/jpeg;base64,' + Utilities.base64Encode(archivo.getBlob().getBytes()), paneles: Number(archivo.getDescription()) || 0 }
+}
+
+function borrarRender(id) {
+  const archivos = carpeta(CARPETA_RENDERS).getFilesByName(id + '.jpg')
+  while (archivos.hasNext()) archivos.next().setTrashed(true)
 }
 
 // Guarda el PDF de una propuesta (contenido en base64). Si ya había uno con ese nombre, lo reemplaza.
 // Anota el enlace en la fila de la propuesta y lo devuelve junto con el de la carpeta.
 function guardarPdf(id, nombre, contenido) {
   if (!id || !nombre || !contenido) throw new Error('Faltan datos del PDF.')
-  const carpeta = carpetaPdf()
-  const anteriores = carpeta.getFilesByName(nombre)
+  const destino = carpeta(CARPETA_PDF)
+  const anteriores = destino.getFilesByName(nombre)
   while (anteriores.hasNext()) anteriores.next().setTrashed(true)
-  const archivo = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(contenido), 'application/pdf', nombre))
+  const archivo = destino.createFile(Utilities.newBlob(Utilities.base64Decode(contenido), 'application/pdf', nombre))
   const pestana = hoja(HOJA_PROPUESTAS, COLUMNAS)
   const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
   const posicion = ids.indexOf(String(id))
   if (posicion > 0) pestana.getRange(posicion + 1, COLUMNAS.indexOf('pdf') + 1).setValue(archivo.getUrl())
-  return { url: archivo.getUrl(), carpeta: carpeta.getUrl() }
+  return { url: archivo.getUrl(), carpeta: destino.getUrl() }
 }
 
 function eliminarPropuesta(id) {
   const pestana = hoja(HOJA_PROPUESTAS, COLUMNAS)
+  const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
+  const posicion = ids.indexOf(String(id))
+  if (posicion > 0) pestana.deleteRow(posicion + 1)
+  borrarRender(id)
+}
+
+// Celda de la hoja para un valor del catálogo.
+function aCelda(valor) {
+  return valor === undefined || valor === null ? '' : Array.isArray(valor) ? valor.join('; ') : valor
+}
+
+// Inserta una ficha de equipo o, si su id ya existe, actualiza esa fila.
+function guardarEquipo(categoria, equipo, columnas) {
+  if (!HOJAS_CATALOGO[categoria] || !equipo || !equipo.id) throw new Error('Faltan datos del equipo.')
+  const candado = LockService.getScriptLock()
+  candado.waitLock(15000)
+  try {
+    const pestana = hoja(HOJAS_CATALOGO[categoria], columnas)
+    const fila = columnas.map(function (clave) { return aCelda(equipo[clave]) })
+    const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
+    const posicion = ids.indexOf(String(equipo.id))
+    if (posicion > 0) pestana.getRange(posicion + 1, 1, 1, fila.length).setValues([fila])
+    else pestana.appendRow(fila)
+  } finally {
+    candado.releaseLock()
+  }
+}
+
+function eliminarEquipo(categoria, id) {
+  if (!HOJAS_CATALOGO[categoria]) throw new Error('Categoría desconocida: ' + categoria)
+  const pestana = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS_CATALOGO[categoria])
+  if (!pestana) return
   const ids = pestana.getRange(1, 1, Math.max(pestana.getLastRow(), 1), 1).getValues().map(function (r) { return String(r[0]) })
   const posicion = ids.indexOf(String(id))
   if (posicion > 0) pestana.deleteRow(posicion + 1)
@@ -215,8 +288,7 @@ function escribirCatalogo(catalogo, columnas) {
     const filas = [encabezados].concat(
       equipos.map(function (equipo) {
         return encabezados.map(function (clave) {
-          const valor = equipo[clave]
-          return valor === undefined || valor === null ? '' : Array.isArray(valor) ? valor.join('; ') : valor
+          return aCelda(equipo[clave])
         })
       }),
     )

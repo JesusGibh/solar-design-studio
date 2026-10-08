@@ -50,13 +50,24 @@ export const PROYECTO_INICIAL = {
     // La firma identifica la cuadrícula; si esta cambia (otro panel, retranqueo…), el acomodo se descarta.
     acomodo: null,
   },
+  // Arquitectura del sistema y almacenamiento (ver lib/almacenamiento.js).
+  sistema: {
+    tipo: 'on_grid', // 'on_grid' | 'off_grid' | 'hibrido'
+    respaldo: false, // híbrido: incluir baterías de respaldo
+    usarCargas: false, // aislado: dimensionar con la tabla de cargas en vez del consumo de la factura
+    cargas: [], // [{ nombre, potenciaW, cantidad, horas, simultaneidad }]
+    autonomiaDias: '1',
+    dod: '', // % de descarga; vacío = el recomendado para la batería
+    gananciaBifacial: '8', // % extra de generación con paneles bifaciales
+    perfilCarga: 'residencial', // reparto horario del consumo para la simulación de 24 h
+  },
   // marca: clave de config/brands.js · autor: clave de config/authors.js
   // moneda: símbolo con el que salen los montos en el PDF (el balboa va a la par del dólar)
   propuesta: { id: '', marca: 'solar-5-estrellas', autor: 'jesus-ariza', cliente: '', direccion: '', moneda: 'B/.' },
   finanzas: {
     precioWp: '', // $/Wp instalado
     bateriaId: '', // batería del catálogo incluida en la propuesta
-    bateriaCantidad: '1',
+    bateriaCantidad: '', // vacío = la cantidad recomendada
     costoBaterias: '', // costo adicional por almacenamiento
     inflacion: '3', // % anual del costo de la energía
     descuento: '8', // % anual para el valor actual neto
