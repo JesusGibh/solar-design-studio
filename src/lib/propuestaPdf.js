@@ -431,7 +431,7 @@ export function construirPropuestaPdf(jsPDF, datos) {
   caja(0, ALTO - 20, ANCHO, 20, PRIMARIO)
   caja(0, ALTO - 20, ANCHO, 1, SECUNDARIO)
   texto(marca.lema || marca.nombre, MARGEN, ALTO - 9, { tamano: 9.5, color: BLANCO, negrita: true })
-  texto(`${autor.web} · ${autor.instagram} · Tel. ${autor.telefono}`, ANCHO - MARGEN, ALTO - 9, { tamano: 8.5, color: BLANCO, align: 'right' })
+  texto([autor.web, autor.instagram, autor.telefono && `Tel. ${autor.telefono}`].filter(Boolean).join(' · '), ANCHO - MARGEN, ALTO - 9, { tamano: 8.5, color: BLANCO, align: 'right' })
 
   // ====================================================================== Hoja 2: resumen ejecutivo
   y = nuevaHoja('Resumen ejecutivo')
@@ -767,13 +767,13 @@ export function construirPropuestaPdf(jsPDF, datos) {
   doc.line(MARGEN + 7, y + 13, MARGEN + 80, y + 13)
   texto('FIRMA', MARGEN + 7, y + 6, { tamano: 6.8, color: TENUE })
   texto(autor.nombre, MARGEN + 7, y + 18.5, { tamano: 10.5, negrita: true, ancho: 80 })
-  texto(`${autor.cargo} — ${marca.nombre}`, MARGEN + 7, y + 24.5, { tamano: 8, color: PRIMARIO, negrita: true, ancho: 82 })
+  texto([autor.cargo, marca.nombre].filter(Boolean).join(' — '), MARGEN + 7, y + 24.5, { tamano: 8, color: PRIMARIO, negrita: true, ancho: 82 })
   const contacto = [
     ['Correo', autor.email],
     ['Teléfono', autor.telefono],
     ['Web', autor.web],
     ['Instagram', autor.instagram],
-  ]
+  ].filter(([, valor]) => valor) // un perfil puede no tener todos los datos
   contacto.forEach(([etiqueta, valor], i) => {
     texto(etiqueta, MARGEN + 96, y + 8 + i * 5.4, { tamano: 8, color: TENUE })
     texto(valor, MARGEN + 114, y + 8 + i * 5.4, { tamano: 8.5 })

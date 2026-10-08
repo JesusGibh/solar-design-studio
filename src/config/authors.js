@@ -18,6 +18,16 @@ export const AUTHORS = {
     web: 'www.solar5estrellas.com',
     instagram: '@solar5estrellas',
   },
+  // Cargo pendiente de confirmar: mientras esté vacío no aparece en la propuesta.
+  'joel-villamil': {
+    firma: 'Ing. Joel Villamil',
+    nombre: 'JOEL VILLAMIL',
+    cargo: '',
+    email: 'jvillamil@solar5estrellas.com',
+    telefono: '(+507) 6498-7773',
+    web: 'www.solar5estrellas.com',
+    instagram: '@solar5estrellas',
+  },
 }
 
 export const AUTHOR_POR_DEFECTO = 'jesus-ariza'
